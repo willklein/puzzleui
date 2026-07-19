@@ -50,6 +50,8 @@ export interface AcrosticSchema {
     guesses: string[][]
     /** Per-line overrides registered by `Acrostic.Line`'s own `line` prop, keyed by index. */
     lineOverrides: Record<number, AcrosticLine>
+    /** `"lineIndex:boxIndex"` of the box to focus next (auto-advance), or `null`. */
+    focusTarget: string | null
   }
   computed: {
     /** `lines` merged with any registered per-line overrides. */
@@ -80,6 +82,14 @@ export interface AcrosticApi<T extends PropTypes = PropTypes> {
   /** Whether `answer` matches `solution` (always `false` if no `solution` was given). */
   solved: boolean
   disabled: boolean
+  /**
+   * `"lineIndex:boxIndex"` of the box that should take focus next, or `null`.
+   * Set automatically when a letter is typed, to auto-advance to the
+   * following box (and into the next line, if at the end of one). Each
+   * `Acrostic.Box` compares this against its own position to know when to
+   * focus itself.
+   */
+  focusTarget: string | null
 
   setBoxLetter: (lineIndex: number, boxIndex: number, letter: string) => void
   setGuesses: (guesses: string[][]) => void

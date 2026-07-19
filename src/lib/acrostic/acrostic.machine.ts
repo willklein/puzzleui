@@ -71,6 +71,9 @@ export const machine = createMachine<AcrosticSchema>({
       lineOverrides: bindable<Record<number, AcrosticLine>>(() => ({
         defaultValue: {},
       })),
+      focusTarget: bindable<string | null>(() => ({
+        defaultValue: null,
+      })),
     }
   },
 
@@ -133,11 +136,26 @@ export const machine = createMachine<AcrosticSchema>({
   implementations: {
     actions: {
       setBoxLetter({ context, event, computed }) {
-        const guesses = fill(computed('effectiveLines'), context.get('guesses'))
+        const lines = computed('effectiveLines')
+        const guesses = fill(lines, context.get('guesses'))
         const line = guesses[event.lineIndex]
         if (!line) return
         line[event.boxIndex] = event.letter
         context.set('guesses', guesses)
+
+        if (!event.letter) {
+          context.set('focusTarget', null)
+          return
+        }
+
+        const currentLine = lines[event.lineIndex]
+        if (currentLine && event.boxIndex + 1 < currentLine.longWordLength) {
+          context.set('focusTarget', `${event.lineIndex}:${event.boxIndex + 1}`)
+        } else if (event.lineIndex + 1 < lines.length) {
+          context.set('focusTarget', `${event.lineIndex + 1}:0`)
+        } else {
+          context.set('focusTarget', null)
+        }
       },
       setGuesses({ context, event, computed }) {
         context.set('guesses', fill(computed('effectiveLines'), event.guesses))

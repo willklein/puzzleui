@@ -11,6 +11,7 @@ export function connect<T extends PropTypes>(service: AcrosticService, normalize
   const solved = computed('solved')
   const complete = computed('complete')
   const disabled = !!prop('disabled')
+  const focusTarget = context.get('focusTarget')
 
   return {
     lines,
@@ -19,6 +20,7 @@ export function connect<T extends PropTypes>(service: AcrosticService, normalize
     complete,
     solved,
     disabled,
+    focusTarget,
 
     setBoxLetter(lineIndex, boxIndex, letter) {
       send({ type: 'BOX.SET', lineIndex, boxIndex, letter })

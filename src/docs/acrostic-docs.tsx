@@ -56,7 +56,8 @@ export function AcrosticDocs() {
           },
           {
             name: 'Acrostic.Box',
-            description: 'One directly-typeable, single-letter input box within a line’s guess.',
+            description:
+              'One directly-typeable, single-letter input box within a line’s guess. Typing a letter auto-advances focus to the next box, including into the next line.',
           },
           {
             name: 'Acrostic.Answer',

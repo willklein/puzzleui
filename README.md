@@ -125,7 +125,7 @@ instead (overriding Root's array entry at that index if both are given), so `lin
 | `Acrostic.Line` | One clue + box row for `index`. Composes `Acrostic.Clue` and `Acrostic.Word` internally. Can own its layout via its own `line` prop instead of Root's `lines` array. |
 | `Acrostic.Clue` | The clue text for `index` (defaults to `lines[index].clue`). |
 | `Acrostic.Word` | The row of blank input boxes for `index`'s long word, sized to `lines[index].longWordLength`. |
-| `Acrostic.Box` | One directly-typeable, single-letter input box within a line's guess. |
+| `Acrostic.Box` | One directly-typeable, single-letter input box within a line's guess. Typing a letter auto-advances focus to the next box, including into the next line. |
 | `Acrostic.Answer` | Displays the assembled final answer (lines with no first letter yet render as `_`). |
 | `Acrostic.SolvedIndicator` | Renders its children once `solved` is true, otherwise renders `fallback`. |
 
