@@ -192,6 +192,29 @@ body {
   font-size: 0.95rem;
 }
 
+.solution-input {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  text-transform: uppercase;
+}
+
+.solution-input::placeholder {
+  color: var(--text-dim);
+  text-transform: none;
+}
+
+.field-hint {
+  margin: -0.75rem 0 1.25rem;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+}
+
 .editor-lines {
   display: flex;
   flex-direction: column;

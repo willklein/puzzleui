@@ -46,6 +46,7 @@ export function CryptexExample() {
   const [editorOpen, setEditorOpen] = useState(false)
   const [draftLength, setDraftLength] = useState(length)
   const [draftLines, setDraftLines] = useState(lines)
+  const [draftSolution, setDraftSolution] = useState(solution ?? '')
 
   const canSave = guess.length === letters.length
 
@@ -53,6 +54,7 @@ export function CryptexExample() {
     if (details.open) {
       setDraftLength(length)
       setDraftLines(lines)
+      setDraftSolution(solution ?? '')
     }
     setEditorOpen(details.open)
   }
@@ -79,9 +81,10 @@ export function CryptexExample() {
 
   function handleUpdate() {
     const nextLetters = linesToLetters(draftLines, draftLength)
+    const trimmedSolution = draftSolution.trim().toUpperCase()
     setLength(draftLength)
     setLines(draftLines)
-    setSolution(undefined)
+    setSolution(trimmedSolution ? trimmedSolution : undefined)
     setGuess(nextLetters.map((candidates) => candidates[0]).join(''))
     setSolved(false)
     setConfigVersion((prev) => prev + 1)
@@ -119,6 +122,21 @@ export function CryptexExample() {
                     className="length-input"
                   />
                 </label>
+
+                <label className="field">
+                  <span className="field-label">Solution (optional)</span>
+                  <input
+                    type="text"
+                    value={draftSolution}
+                    onChange={(event) => setDraftSolution(event.target.value)}
+                    placeholder="e.g. GARDEN"
+                    className="solution-input"
+                  />
+                </label>
+                <p className="field-hint">
+                  Leave blank if the puzzle shouldn't have a single correct answer — it'll still show the
+                  dialed word, just never report as solved.
+                </p>
 
                 <div className="editor-lines">
                   {draftLines.map((line, row) => (
