@@ -257,8 +257,11 @@ export function BluePrincePage() {
         </p>
       </header>
 
-      <Tabs.Root defaultValue={CRYPTEX_PUZZLES[0].value} className="tabs">
+      <Tabs.Root defaultValue={ACROSTIC_PUZZLE.value} className="tabs">
         <Tabs.List className="tabs-list">
+          <Tabs.Trigger value={ACROSTIC_PUZZLE.value} className="tabs-trigger">
+            {ACROSTIC_PUZZLE.tabLabel}
+          </Tabs.Trigger>
           {CRYPTEX_PUZZLES.map((puzzle) => (
             <Tabs.Trigger
               key={puzzle.value}
@@ -268,9 +271,6 @@ export function BluePrincePage() {
               {puzzle.tabLabel}
             </Tabs.Trigger>
           ))}
-          <Tabs.Trigger value={ACROSTIC_PUZZLE.value} className="tabs-trigger">
-            {ACROSTIC_PUZZLE.tabLabel}
-          </Tabs.Trigger>
           <Tabs.Indicator className="tabs-indicator" />
         </Tabs.List>
 
@@ -288,6 +288,21 @@ export function BluePrincePage() {
           </Tabs.Content>
         ))}
       </Tabs.Root>
+
+      <footer className="app-footer">
+        <p>
+          Blue Prince is a puzzle game developed by Dogubomb and published by
+          Raw Fury. All puzzle content, names, and imagery referenced above
+          belong to their respective copyright holders. This page is an
+          unofficial, fan-made reference tool for personal use — it is not
+          affiliated with, endorsed by, or sponsored by Dogubomb or Raw Fury.
+        </p>
+
+        <p>
+          If you enjoy puzzles like these, consider supporting the creators of
+          Blue Prince by purchasing the game and exploring their other works!
+        </p>
+      </footer>
     </div>
   );
 }
