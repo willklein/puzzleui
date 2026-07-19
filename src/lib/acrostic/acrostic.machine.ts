@@ -1,16 +1,16 @@
 import { createMachine } from '@zag-js/core'
-import {
-  MIN_HIDDEN_WORD_LENGTH,
-  type AcrosticAnchor,
-  type AcrosticSchema,
-  type AcrosticSelection,
-} from './acrostic.types'
+import type { AcrosticLine, AcrosticSchema } from './acrostic.types'
 
-function fill(
-  selections: Array<AcrosticSelection | null> | undefined,
-  count: number,
-): Array<AcrosticSelection | null> {
-  return Array.from({ length: count }, (_, i) => selections?.[i] ?? null)
+/** Builds a per-line, per-box guess grid sized to each line's word length. */
+function fill(lines: AcrosticLine[], existing?: string[][]): string[][] {
+  return lines.map((line, i) => {
+    const existingLine = existing?.[i]
+    return Array.from({ length: line.word.length }, (_, j) => existingLine?.[j] ?? '')
+  })
+}
+
+function computeAnswer(lines: AcrosticLine[], guesses: string[][]): string {
+  return lines.map((_, i) => guesses[i]?.[0]?.toUpperCase() || '_').join('')
 }
 
 export const machine = createMachine<AcrosticSchema>({
@@ -18,8 +18,8 @@ export const machine = createMachine<AcrosticSchema>({
     return {
       lines: props.lines ?? [],
       solution: props.solution,
-      selections: props.selections,
-      defaultSelections: props.defaultSelections ?? [],
+      guesses: props.guesses,
+      defaultGuesses: props.defaultGuesses ?? [],
       disabled: props.disabled,
       id: props.id,
       onAnswerChange: props.onAnswerChange,
@@ -33,41 +33,26 @@ export const machine = createMachine<AcrosticSchema>({
 
   context({ prop, bindable }) {
     return {
-      selections: bindable<Array<AcrosticSelection | null>>(() => ({
-        value: prop('selections') ? fill(prop('selections'), prop('lines').length) : undefined,
-        defaultValue: fill(prop('defaultSelections'), prop('lines').length),
-        onChange(selections) {
-          const lines = prop('lines')
-          const answer = lines
-            .map((line, i) => {
-              const sel = selections[i]
-              return sel ? (line.word[sel.start]?.toUpperCase() ?? '_') : '_'
-            })
-            .join('')
-          prop('onAnswerChange')?.({ answer, selections })
+      guesses: bindable<string[][]>(() => ({
+        value: prop('guesses') ? fill(prop('lines'), prop('guesses')) : undefined,
+        defaultValue: fill(prop('lines'), prop('defaultGuesses')),
+        isEqual: (a, b) => a.map((line) => line.join('')).join('|') === b?.map((line) => line.join('')).join('|'),
+        onChange(guesses) {
+          prop('onAnswerChange')?.({ answer: computeAnswer(prop('lines'), guesses), guesses })
         },
-      })),
-      anchor: bindable<AcrosticAnchor | null>(() => ({
-        defaultValue: null,
       })),
     }
   },
 
   computed: {
     lineCount: ({ prop }) => prop('lines').length,
-    answer: ({ prop, context }) => {
-      const lines = prop('lines')
-      const selections = context.get('selections')
-      return lines
-        .map((line, i) => {
-          const sel = selections[i]
-          return sel ? (line.word[sel.start]?.toUpperCase() ?? '_') : '_'
-        })
-        .join('')
-    },
+    answer: ({ prop, context }) => computeAnswer(prop('lines'), context.get('guesses')),
     complete: ({ context, computed }) => {
-      const selections = context.get('selections')
-      return selections.length === computed('lineCount') && selections.every((sel) => sel !== null)
+      const guesses = context.get('guesses')
+      return (
+        guesses.length === computed('lineCount') &&
+        guesses.every((line) => line.length > 0 && line.every((letter) => letter !== ''))
+      )
     },
     solved: ({ prop, computed }) => {
       const solution = prop('solution')
@@ -83,70 +68,35 @@ export const machine = createMachine<AcrosticSchema>({
   },
 
   on: {
-    'SELECTION.SET': {
-      actions: ['setSelections'],
+    'BOX.SET': {
+      actions: ['setBoxLetter'],
     },
-    'SELECTION.CLEAR_ALL': {
-      target: 'idle',
-      actions: ['clearAllSelections', 'clearAnchor'],
+    'GUESSES.SET': {
+      actions: ['setGuesses'],
+    },
+    'GUESSES.CLEAR': {
+      actions: ['clearGuesses'],
     },
   },
 
   states: {
-    idle: {
-      on: {
-        'LETTER.CLICK': {
-          target: 'selecting',
-          actions: ['setAnchor'],
-        },
-      },
-    },
-    selecting: {
-      on: {
-        'LETTER.CLICK': [
-          {
-            guard: 'sameLine',
-            target: 'idle',
-            actions: ['commitSelection'],
-          },
-          {
-            actions: ['setAnchor'],
-          },
-        ],
-      },
-    },
+    idle: {},
   },
 
   implementations: {
-    guards: {
-      sameLine: ({ context, event }) => context.get('anchor')?.lineIndex === event.lineIndex,
-    },
-
     actions: {
-      setAnchor({ context, event }) {
-        context.set('anchor', { lineIndex: event.lineIndex, letterIndex: event.letterIndex })
+      setBoxLetter({ context, event, prop }) {
+        const guesses = fill(prop('lines'), context.get('guesses'))
+        const line = guesses[event.lineIndex]
+        if (!line) return
+        line[event.boxIndex] = event.letter
+        context.set('guesses', guesses)
       },
-      commitSelection({ context, event, prop }) {
-        const anchor = context.get('anchor')
-        if (!anchor) return
-
-        const start = Math.min(anchor.letterIndex, event.letterIndex)
-        const end = Math.max(anchor.letterIndex, event.letterIndex)
-        const length = end - start + 1
-
-        const selections = fill(context.get('selections'), prop('lines').length)
-        selections[event.lineIndex] = length >= MIN_HIDDEN_WORD_LENGTH ? { start, end } : null
-        context.set('selections', selections)
-        context.set('anchor', null)
+      setGuesses({ context, event, prop }) {
+        context.set('guesses', fill(prop('lines'), event.guesses))
       },
-      clearAnchor({ context }) {
-        context.set('anchor', null)
-      },
-      setSelections({ context, event, prop }) {
-        context.set('selections', fill(event.selections, prop('lines').length))
-      },
-      clearAllSelections({ context, prop }) {
-        context.set('selections', fill([], prop('lines').length))
+      clearGuesses({ context, prop }) {
+        context.set('guesses', fill(prop('lines'), []))
       },
       notifySolvedChange({ prop, computed }) {
         prop('onSolvedChange')?.(computed('solved'))

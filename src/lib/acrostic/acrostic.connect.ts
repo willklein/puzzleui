@@ -7,26 +7,27 @@ export function connect<T extends PropTypes>(service: AcrosticService, normalize
   const { context, prop, computed, send } = service
 
   const lines = prop('lines')
-  const selections = context.get('selections')
-  const anchor = context.get('anchor')
+  const guesses = context.get('guesses')
   const solved = computed('solved')
   const complete = computed('complete')
   const disabled = !!prop('disabled')
 
   return {
     lines,
-    selections,
-    anchor,
+    guesses,
     answer: computed('answer'),
     complete,
     solved,
     disabled,
 
-    setSelections(next) {
-      send({ type: 'SELECTION.SET', selections: next })
+    setBoxLetter(lineIndex, boxIndex, letter) {
+      send({ type: 'BOX.SET', lineIndex, boxIndex, letter })
+    },
+    setGuesses(next) {
+      send({ type: 'GUESSES.SET', guesses: next })
     },
     clearAll() {
-      send({ type: 'SELECTION.CLEAR_ALL' })
+      send({ type: 'GUESSES.CLEAR' })
     },
 
     getRootProps() {
@@ -54,11 +55,13 @@ export function connect<T extends PropTypes>(service: AcrosticService, normalize
     },
 
     getLineProps(lineIndex) {
+      const line = guesses[lineIndex] ?? []
+      const filled = line.length > 0 && line.every((letter) => letter !== '')
       return normalize.element({
         'data-scope': 'acrostic',
         'data-part': 'line',
         'data-index': lineIndex,
-        'data-filled': dataAttr(!!selections[lineIndex]),
+        'data-filled': dataAttr(filled),
       })
     },
 
@@ -78,24 +81,23 @@ export function connect<T extends PropTypes>(service: AcrosticService, normalize
       })
     },
 
-    getLetterProps(lineIndex, letterIndex) {
-      const sel = selections[lineIndex]
-      const inRange = !!sel && letterIndex >= sel.start && letterIndex <= sel.end
-      const isAnswerLetter = !!sel && letterIndex === sel.start
-      const isAnchor = anchor?.lineIndex === lineIndex && anchor?.letterIndex === letterIndex
-
-      return normalize.button({
-        type: 'button',
+    getBoxProps(lineIndex, boxIndex) {
+      const letter = guesses[lineIndex]?.[boxIndex] ?? ''
+      return normalize.input({
+        type: 'text',
+        maxLength: 1,
+        value: letter,
         'data-scope': 'acrostic',
-        'data-part': 'letter',
-        'data-index': letterIndex,
-        'data-selected': dataAttr(inRange),
-        'data-answer-letter': dataAttr(isAnswerLetter),
-        'data-anchor': dataAttr(isAnchor),
+        'data-part': 'box',
+        'data-index': boxIndex,
+        'data-answer-box': dataAttr(boxIndex === 0),
+        'data-filled': dataAttr(!!letter),
         disabled,
-        onClick() {
+        'aria-label': `Line ${lineIndex + 1}, letter ${boxIndex + 1}`,
+        onChange(event) {
           if (disabled) return
-          send({ type: 'LETTER.CLICK', lineIndex, letterIndex })
+          const value = event.target.value.slice(-1).toUpperCase()
+          send({ type: 'BOX.SET', lineIndex, boxIndex, letter: value })
         },
       })
     },

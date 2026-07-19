@@ -82,9 +82,10 @@ current guess into a list rendered below the puzzle.
 
 ### `Acrostic` — src/lib/acrostic
 
-A puzzle-hunt style clue chain: each line has an outer word (6+ letters) hiding a shorter word (3+ letters)
-as a contiguous span. Click one letter then another within a line to mark the span — the first letter of
-each line's marked span, in order, spells the final answer.
+A clue chain: each line has a clue and an answer word. The word itself is never shown — instead each line
+renders a row of blank boxes (one per letter) that the player types their guess into directly, styled like
+Cryptex's letter boxes but freeform (no cycling). The first letter of each line's guess, in order, spells
+the final answer.
 
 ```tsx
 import { Acrostic } from './lib/acrostic'
@@ -94,7 +95,7 @@ const lines = [
   { clue: 'Dwellings where families live', word: 'HOUSES' },
 ]
 
-<Acrostic.Root lines={lines} solution="PU" onSolvedChange={console.log}>
+<Acrostic.Root lines={lines} solution="OH" onSolvedChange={console.log}>
   {lines.map((_, index) => (
     <Acrostic.Line key={index} index={index} />
   ))}
@@ -109,38 +110,38 @@ const lines = [
 | Part | Description |
 | --- | --- |
 | `Acrostic.Root` | Owns the puzzle state and provides it to every child part. |
-| `Acrostic.Line` | One clue + outer word row for `index`. Composes `Acrostic.Clue` and `Acrostic.Word` internally. |
+| `Acrostic.Line` | One clue + answer row for `index`. Composes `Acrostic.Clue` and `Acrostic.Word` internally. |
 | `Acrostic.Clue` | The clue text for `index` (defaults to `lines[index].clue`). |
-| `Acrostic.Word` | The row of letter buttons for `index`'s outer word. |
-| `Acrostic.Letter` | A single letter button. Click two letters in the same line to mark the span between them. |
-| `Acrostic.Answer` | Displays the assembled final answer (unfilled lines render as `_`). |
+| `Acrostic.Word` | The row of blank input boxes for `index`'s answer, sized to that answer's length. |
+| `Acrostic.Box` | One directly-typeable, single-letter input box within a line's guess. |
+| `Acrostic.Answer` | Displays the assembled final answer (lines with no first letter yet render as `_`). |
 | `Acrostic.SolvedIndicator` | Renders its children once `solved` is true, otherwise renders `fallback`. |
 
 **`Acrostic.Root` props**
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `lines` | `{ clue: string; word: string }[]` | — | One clue + outer word per line, in the order the final answer is spelled. |
-| `solution` | `string` | — | The final answer, spelled by the first letter of each line's hidden word. |
-| `selections` | `Array<{ start: number; end: number } \| null>` | — | Controlled per-line hidden-word span selections. |
-| `defaultSelections` | `Array<{ start: number; end: number } \| null>` | `[]` | Initial per-line selections when uncontrolled. |
-| `disabled` | `boolean` | — | Disables selecting letters on every line. |
-| `onAnswerChange` | `(details: { answer: string; selections }) => void` | — | Called whenever any line's selection changes. |
+| `lines` | `{ clue: string; word: string }[]` | — | One clue + answer word per line, in the order the final answer is spelled. `word` is never rendered — only its length sizes that line's boxes. |
+| `solution` | `string` | — | The final answer, spelled by the first letter of each line's guess. |
+| `guesses` | `string[][]` | — | Controlled per-line, per-box guessed letters. |
+| `defaultGuesses` | `string[][]` | `[]` | Initial per-line guesses when uncontrolled. |
+| `disabled` | `boolean` | — | Disables typing into every box. |
+| `onAnswerChange` | `(details: { answer: string; guesses: string[][] }) => void` | — | Called whenever any box changes. |
 | `onSolvedChange` | `(solved: boolean) => void` | — | Called whenever `solved` changes. |
 | `id` | `string` | — | Base id used to derive part ids. |
 
 **`Acrostic.Line` / `Acrostic.Clue` / `Acrostic.Word` props**: `index: number` (0-indexed line, required on
 all three).
 
-**`Acrostic.Letter` props**: `lineIndex: number`, `letterIndex: number`.
+**`Acrostic.Box` props**: `lineIndex: number`, `boxIndex: number`.
 
 **`Acrostic.SolvedIndicator` props**: `fallback?: ReactNode` (content shown while not solved).
 
-`MIN_HIDDEN_WORD_LENGTH` (`3`) is exported from the library — a span shorter than that is discarded rather
-than committed as a selection.
+A line only counts toward `complete`/`solved` once every box in it is filled — typing just a first letter
+updates the live `answer` preview but doesn't mark the puzzle solvable until each word is fully guessed.
 
-The bundled example (`src/examples/acrostic-example.tsx`) spells **PUZZLE** from six real words:
-OPENED→PEN, HOUSES→USE, AMAZED→ZED, ZIGZAG→ZAG, PILOTS→LOT, CHEATS→EAT.
+The bundled example (`src/examples/acrostic-example.tsx`) spells **PUZZLE** from six answer words: PENCIL,
+UMBRELLA, ZEBRA, ZIGZAG, LANTERN, ENGINE.
 
 ## Architecture
 

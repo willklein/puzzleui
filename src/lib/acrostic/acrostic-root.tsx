@@ -11,23 +11,14 @@ import type { Assign } from '../shared/types'
 export interface AcrosticRootProps extends Assign<HTMLArkProps<'div'>, UseAcrosticProps> {}
 
 export const AcrosticRoot = forwardRef<HTMLDivElement, AcrosticRootProps>((props, ref) => {
-  const {
-    lines,
-    solution,
-    selections,
-    defaultSelections,
-    disabled,
-    id,
-    onAnswerChange,
-    onSolvedChange,
-    ...localProps
-  } = props
+  const { lines, solution, guesses, defaultGuesses, disabled, id, onAnswerChange, onSolvedChange, ...localProps } =
+    props
 
   const acrostic = useAcrostic({
     lines,
     solution,
-    selections,
-    defaultSelections,
+    guesses,
+    defaultGuesses,
     disabled,
     id,
     onAnswerChange,

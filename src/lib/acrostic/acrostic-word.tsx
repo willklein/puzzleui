@@ -5,7 +5,7 @@ import { mergeProps } from '@zag-js/react'
 import { ark } from '@ark-ui/react/factory'
 import type { HTMLArkProps } from '@ark-ui/react/factory'
 import { useAcrosticContext } from './acrostic-context'
-import { AcrosticLetter } from './acrostic-letter'
+import { AcrosticBox } from './acrostic-box'
 
 export interface AcrosticWordProps extends HTMLArkProps<'div'> {
   index: number
@@ -14,14 +14,12 @@ export interface AcrosticWordProps extends HTMLArkProps<'div'> {
 export const AcrosticWord = forwardRef<HTMLDivElement, AcrosticWordProps>(({ index, ...props }, ref) => {
   const acrostic = useAcrosticContext()
   const mergedProps = mergeProps(acrostic.getWordProps(index), props)
-  const word = acrostic.lines[index]?.word ?? ''
+  const length = acrostic.lines[index]?.word.length ?? 0
 
   return (
     <ark.div {...mergedProps} ref={ref}>
-      {word.split('').map((letter, letterIndex) => (
-        <AcrosticLetter key={letterIndex} lineIndex={index} letterIndex={letterIndex}>
-          {letter}
-        </AcrosticLetter>
+      {Array.from({ length }, (_, boxIndex) => (
+        <AcrosticBox key={boxIndex} lineIndex={index} boxIndex={boxIndex} />
       ))}
     </ark.div>
   )
