@@ -7,7 +7,17 @@ export function App() {
     <div className="app">
       <header className="app-header">
         <h1>puzzleui</h1>
-        <p>A puzzle component library built on Ark UI, with state managed by Zag JS.</p>
+        <p>
+          A puzzle component library built on{' '}
+          <a href="https://ark-ui.com/" target="_blank" rel="noreferrer">
+            Ark UI
+          </a>
+          , with state managed by{' '}
+          <a href="https://zagjs.com/" target="_blank" rel="noreferrer">
+            Zag
+          </a>
+          .
+        </p>
       </header>
 
       <Tabs.Root defaultValue="cryptex" className="tabs">

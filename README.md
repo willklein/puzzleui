@@ -1,8 +1,8 @@
 # puzzleui
 
-A small puzzle-component library built on [Ark UI](https://ark-ui.com/docs) primitives, with all state
-managed by hand-written [Zag JS](https://zagjs.com) state machines (the same engine Ark UI's own components
-are built on).
+A small puzzle-component library built on [Ark UI](https://ark-ui.com/) primitives, with all state managed
+by hand-written [Zag](https://zagjs.com/) state machines (the same engine Ark UI's own components are built
+on).
 
 ```
 pnpm install
@@ -159,17 +159,18 @@ The bundled example (`src/examples/acrostic-example.tsx`) spells **PUZZLE** from
 
 ## Architecture
 
-Both components follow the same pattern Ark UI itself uses internally for every component (verified against
-`@ark-ui/react`'s own source):
+Both components follow the same pattern [Ark UI](https://ark-ui.com/) itself uses internally for every
+component (verified against `@ark-ui/react`'s own source):
 
-- `*.types.ts` — the Zag `MachineSchema` (state/props/context/computed/events) plus the public `Api` shape.
+- `*.types.ts` — the [Zag](https://zagjs.com/) `MachineSchema` (state/props/context/computed/events) plus
+  the public `Api` shape.
 - `*.machine.ts` — a `createMachine` state machine from `@zag-js/core` (props, context, computed, watchers,
   transitions, actions).
 - `*.connect.ts` — turns a running machine `Service` into the public `Api`, producing DOM props via
   `normalize.element(...)`/`normalize.button(...)` and `data-scope`/`data-part` attributes for styling
   (Ark UI's own styling convention).
 - `use-*.ts` — the React hook: `useMachine(machine, props)` + `connect(service, normalizeProps)`, exactly the
-  pattern documented at zagjs.com and used by every Ark UI component.
+  pattern documented at [zagjs.com](https://zagjs.com/) and used by every Ark UI component.
 - `*-context.tsx`, `*-root.tsx`, `*-<part>.tsx` — the compound-component React layer, built on Ark UI's `ark`
   factory (`@ark-ui/react/factory`) for polymorphic, `asChild`-capable DOM parts.
 

@@ -47,6 +47,15 @@ body {
   color: var(--text-dim);
 }
 
+.app-header a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.app-header a:hover {
+  text-decoration: underline;
+}
+
 /* Tabs (Ark UI) */
 
 .tabs-list {
