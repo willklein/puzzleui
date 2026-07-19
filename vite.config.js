@@ -1,5 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-export default defineConfig({
-    plugins: [react()],
+// Served at https://willklein.github.io/puzzleui/ in production, so assets
+// need that base path baked in. Keep the dev server at the domain root.
+export default defineConfig(function (_a) {
+    var command = _a.command;
+    return ({
+        base: command === 'build' ? '/puzzleui/' : '/',
+        plugins: [react()],
+    });
 });
