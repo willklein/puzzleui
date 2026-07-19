@@ -89,6 +89,22 @@ body {
 
 /* Shared example layout */
 
+.example-heading {
+  margin-bottom: 1rem;
+}
+
+.example-heading h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.2rem;
+  letter-spacing: -0.01em;
+}
+
+.example-description {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
 .example-intro {
   color: var(--text-dim);
   font-size: 0.95rem;

@@ -26,7 +26,16 @@ function clampLine(line: AcrosticLineData): AcrosticLineData {
   return { ...line, longWordLength, smallWordStart, smallWordEnd }
 }
 
-export function AcrosticExample() {
+export interface AcrosticExampleProps {
+  /** Optional heading shown above the puzzle, e.g. for a game-specific instance of this example. */
+  title?: string | undefined
+  /** Optional flavor text shown under `title`. */
+  description?: string | undefined
+  /** Whether to render the component-library docs section. Defaults to `true`. */
+  showDocs?: boolean | undefined
+}
+
+export function AcrosticExample({ title, description, showDocs = true }: AcrosticExampleProps = {}) {
   const [answer, setAnswer] = useState('')
   const [solved, setSolved] = useState(false)
 
@@ -93,6 +102,12 @@ export function AcrosticExample() {
 
   return (
     <div className="example">
+      {title && (
+        <div className="example-heading">
+          <h2>{title}</h2>
+          {description && <p className="example-description">{description}</p>}
+        </div>
+      )}
       <div className="example-toolbar">
         <p className="example-intro">
           Each line has a clue — type your best guess into its boxes. A configurable span of letters within
@@ -243,9 +258,11 @@ export function AcrosticExample() {
         Current answer: <code>{answer || '(nothing typed yet)'}</code> {solved ? '✓' : ''}
       </p>
 
-      <div className="example-docs">
-        <AcrosticDocs />
-      </div>
+      {showDocs && (
+        <div className="example-docs">
+          <AcrosticDocs />
+        </div>
+      )}
     </div>
   )
 }

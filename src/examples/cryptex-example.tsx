@@ -20,6 +20,17 @@ const DEFAULT_LINES: string[][] = [
 ]
 const DEFAULT_SOLUTION = 'GARDEN'
 
+export interface CryptexExampleProps {
+  /** Optional heading shown above the puzzle, e.g. for a game-specific instance of this example. */
+  title?: string | undefined
+  /** Optional flavor text shown under `title`. */
+  description?: string | undefined
+  /** Whether to render the "Save this combination" button and list. Defaults to `true`. */
+  showSavedList?: boolean | undefined
+  /** Whether to render the component-library docs section. Defaults to `true`. */
+  showDocs?: boolean | undefined
+}
+
 /** Transposes line-major editor rows into the column-major `letters` shape the Cryptex component expects. */
 function linesToLetters(lines: string[][], length: number): string[][] {
   return Array.from({ length }, (_, col) => {
@@ -32,7 +43,7 @@ function resizeLine(line: string[], length: number): string[] {
   return Array.from({ length }, (_, i) => line[i] ?? '')
 }
 
-export function CryptexExample() {
+export function CryptexExample({ title, description, showSavedList = true, showDocs = true }: CryptexExampleProps = {}) {
   const [guess, setGuess] = useState('')
   const [solved, setSolved] = useState(false)
   const [attempts, setAttempts] = useState<Attempt[]>([])
@@ -93,6 +104,12 @@ export function CryptexExample() {
 
   return (
     <div className="example">
+      {title && (
+        <div className="example-heading">
+          <h2>{title}</h2>
+          {description && <p className="example-description">{description}</p>}
+        </div>
+      )}
       <div className="example-toolbar">
         <p className="example-intro">
           Dial in each wheel to line up a word. Click a wheel or tab into the puzzle, then use <kbd>↑</kbd>/
@@ -200,34 +217,40 @@ export function CryptexExample() {
         </Cryptex.SolvedIndicator>
       </Cryptex.Root>
 
-      <button
-        type="button"
-        className="save-button"
-        disabled={!canSave}
-        onClick={() => setAttempts((prev) => [{ guess, correct: solved }, ...prev])}
-      >
-        Save this combination
-      </button>
+      {showSavedList && (
+        <>
+          <button
+            type="button"
+            className="save-button"
+            disabled={!canSave}
+            onClick={() => setAttempts((prev) => [{ guess, correct: solved }, ...prev])}
+          >
+            Save this combination
+          </button>
 
-      <div className="saved-list">
-        <h3>Saved combinations</h3>
-        {attempts.length === 0 ? (
-          <p className="saved-empty">Nothing saved yet — dial in a full word and save it.</p>
-        ) : (
-          <ol>
-            {attempts.map((attempt, i) => (
-              <li key={i} className={attempt.correct ? 'saved-item correct' : 'saved-item'}>
-                <span className="saved-guess">{attempt.guess}</span>
-                <span className="saved-status">{attempt.correct ? 'Solved' : 'Not solved'}</span>
-              </li>
-            ))}
-          </ol>
-        )}
-      </div>
+          <div className="saved-list">
+            <h3>Saved combinations</h3>
+            {attempts.length === 0 ? (
+              <p className="saved-empty">Nothing saved yet — dial in a full word and save it.</p>
+            ) : (
+              <ol>
+                {attempts.map((attempt, i) => (
+                  <li key={i} className={attempt.correct ? 'saved-item correct' : 'saved-item'}>
+                    <span className="saved-guess">{attempt.guess}</span>
+                    <span className="saved-status">{attempt.correct ? 'Solved' : 'Not solved'}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+        </>
+      )}
 
-      <div className="example-docs">
-        <CryptexDocs />
-      </div>
+      {showDocs && (
+        <div className="example-docs">
+          <CryptexDocs />
+        </div>
+      )}
     </div>
   )
 }
