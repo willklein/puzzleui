@@ -6,7 +6,7 @@ import { dataAttr } from '../shared/dom'
 export function connect<T extends PropTypes>(service: AcrosticService, normalize: NormalizeProps<T>): AcrosticApi<T> {
   const { context, prop, computed, send } = service
 
-  const lines = prop('lines')
+  const lines = computed('effectiveLines')
   const guesses = context.get('guesses')
   const solved = computed('solved')
   const complete = computed('complete')
@@ -28,6 +28,12 @@ export function connect<T extends PropTypes>(service: AcrosticService, normalize
     },
     clearAll() {
       send({ type: 'GUESSES.CLEAR' })
+    },
+    registerLine(index, line) {
+      send({ type: 'LINE.REGISTER', index, line })
+    },
+    unregisterLine(index) {
+      send({ type: 'LINE.UNREGISTER', index })
     },
 
     getRootProps() {
@@ -82,7 +88,11 @@ export function connect<T extends PropTypes>(service: AcrosticService, normalize
     },
 
     getBoxProps(lineIndex, boxIndex) {
+      const line = lines[lineIndex]
       const letter = guesses[lineIndex]?.[boxIndex] ?? ''
+      const inWord = !!line && boxIndex >= line.smallWordStart && boxIndex <= line.smallWordEnd
+      const isAnswerBox = !!line && boxIndex === line.smallWordStart
+
       return normalize.input({
         type: 'text',
         maxLength: 1,
@@ -90,7 +100,8 @@ export function connect<T extends PropTypes>(service: AcrosticService, normalize
         'data-scope': 'acrostic',
         'data-part': 'box',
         'data-index': boxIndex,
-        'data-answer-box': dataAttr(boxIndex === 0),
+        'data-in-word': dataAttr(inWord),
+        'data-answer-box': dataAttr(isAnswerBox),
         'data-filled': dataAttr(!!letter),
         disabled,
         'aria-label': `Line ${lineIndex + 1}, letter ${boxIndex + 1}`,

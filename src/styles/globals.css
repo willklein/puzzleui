@@ -176,6 +176,15 @@ body {
   margin-bottom: 1.25rem;
 }
 
+.checkbox-field {
+  cursor: pointer;
+}
+
+.checkbox-field input[type='checkbox'] {
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+
 .field-label {
   font-size: 0.85rem;
   color: var(--text-dim);
@@ -277,27 +286,51 @@ body {
   gap: 0.35rem;
 }
 
-.clue-input,
-.word-input {
+.clue-input {
   padding: 0.4rem 0.6rem;
   border-radius: 6px;
   border: 1px solid var(--border-strong);
   background: var(--surface-raised);
   color: var(--text);
   font-size: 0.88rem;
+  width: 100%;
 }
 
-.clue-input:focus-visible,
-.word-input:focus-visible {
+.clue-input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 
-.word-input {
-  width: 100%;
+.editor-acrostic-span {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.span-field {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.span-field-label {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+}
+
+.span-input {
+  width: 3.25rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--text);
   font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size: 0.85rem;
+}
+
+.span-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .editor-row-actions {
@@ -577,7 +610,11 @@ body {
 
 [data-scope='acrostic'][data-part='word'] {
   display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
   gap: 0.3rem;
+  width: fit-content;
 }
 
 [data-scope='acrostic'][data-part='box'] {
@@ -594,8 +631,13 @@ body {
   text-transform: uppercase;
 }
 
+[data-scope='acrostic'][data-part='box'][data-in-word] {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border-strong));
+}
+
 [data-scope='acrostic'][data-part='box'][data-answer-box] {
   border-color: var(--accent);
+  border-width: 2px;
 }
 
 [data-scope='acrostic'][data-part='box']:focus-visible {
@@ -604,7 +646,11 @@ body {
 }
 
 [data-scope='acrostic'][data-part='box'][data-filled] {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface-raised));
+  background: var(--surface-raised);
+}
+
+[data-scope='acrostic'][data-part='box'][data-in-word][data-filled] {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-raised));
 }
 
 [data-scope='acrostic'][data-part='box'][data-answer-box][data-filled] {

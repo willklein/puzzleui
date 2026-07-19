@@ -14,7 +14,7 @@ export interface AcrosticWordProps extends HTMLArkProps<'div'> {
 export const AcrosticWord = forwardRef<HTMLDivElement, AcrosticWordProps>(({ index, ...props }, ref) => {
   const acrostic = useAcrosticContext()
   const mergedProps = mergeProps(acrostic.getWordProps(index), props)
-  const length = acrostic.lines[index]?.word.length ?? 0
+  const length = acrostic.lines[index]?.longWordLength ?? 0
 
   return (
     <ark.div {...mergedProps} ref={ref}>

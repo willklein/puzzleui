@@ -2,14 +2,15 @@ import { PropsTable } from './props-table'
 import { AnatomyList } from './anatomy-list'
 import { CodeBlock } from './code-block'
 
-const USAGE = `import { Acrostic } from './lib/acrostic'
+const USAGE_ROOT = `import { Acrostic } from './lib/acrostic'
 
+// A 6-box long word whose small word spans boxes 2-4 (0-indexed).
 const lines = [
-  { clue: 'Unlocked, unsealed, or begun', word: 'OPENED' },
-  { clue: 'Dwellings where families live', word: 'HOUSES' },
+  { clue: 'Unlocked, unsealed, or begun', longWordLength: 6, smallWordStart: 1, smallWordEnd: 3 },
+  { clue: 'Dwellings where families live', longWordLength: 6, smallWordStart: 2, smallWordEnd: 4 },
 ]
 
-<Acrostic.Root lines={lines} solution="OH" onSolvedChange={console.log}>
+<Acrostic.Root lines={lines} solution="PU" onSolvedChange={console.log}>
   {lines.map((_, index) => (
     <Acrostic.Line key={index} index={index} />
   ))}
@@ -18,14 +19,25 @@ const lines = [
   <Acrostic.SolvedIndicator fallback={<span>Keep going…</span>}>Solved!</Acrostic.SolvedIndicator>
 </Acrostic.Root>`
 
+const USAGE_LINE = `// Alternative: skip Root's \`lines\` array entirely and let each
+// Acrostic.Line own its layout directly.
+<Acrostic.Root solution="PU" onSolvedChange={console.log}>
+  <Acrostic.Line index={0} line={{ clue: 'Unlocked, unsealed, or begun', longWordLength: 6, smallWordStart: 1, smallWordEnd: 3 }} />
+  <Acrostic.Line index={1} line={{ clue: 'Dwellings where families live', longWordLength: 6, smallWordStart: 2, smallWordEnd: 4 }} />
+
+  <Acrostic.Answer />
+</Acrostic.Root>`
+
 export function AcrosticDocs() {
   return (
     <section className="docs-section">
       <h2>Acrostic</h2>
       <p className="docs-lede">
-        A clue chain: each line has a clue and an answer word. The word itself is never shown — instead each
-        line renders a row of blank boxes (one per letter) that the player types their guess into directly.
-        The first letter of each line's guess, in order, spells the final answer.
+        A clue chain: each line has a clue and a row of blank boxes the player types their guess into
+        directly — no answer text is ever stored or rendered, only how many boxes there are. The whole
+        typed word is the <strong>long word</strong>; a configurable span within it is the{' '}
+        <strong>small word</strong>. Each line's small word contributes its first letter, in order, to the
+        final answer.
       </p>
 
       <h3>Anatomy</h3>
@@ -34,12 +46,13 @@ export function AcrosticDocs() {
           { name: 'Acrostic.Root', description: 'Owns the puzzle state and provides it to every child part.' },
           {
             name: 'Acrostic.Line',
-            description: "One clue + answer row for `index`. Composes Acrostic.Clue and Acrostic.Word internally.",
+            description:
+              "One clue + box row for `index`. Composes Acrostic.Clue and Acrostic.Word internally. Can own its layout via its own `line` prop instead of Root's `lines` array.",
           },
           { name: 'Acrostic.Clue', description: "The clue text for `index` (defaults to lines[index].clue)." },
           {
             name: 'Acrostic.Word',
-            description: "The row of blank input boxes for `index`'s answer, sized to that answer's length.",
+            description: "The row of blank input boxes for `index`'s long word, sized to lines[index].longWordLength.",
           },
           {
             name: 'Acrostic.Box',
@@ -61,14 +74,20 @@ export function AcrosticDocs() {
         rows={[
           {
             name: 'lines',
-            type: '{ clue: string; word: string }[]',
+            type: '{ clue: string; longWordLength: number; smallWordStart: number; smallWordEnd: number }[]',
             description:
-              "One clue + answer word per line, in the order the final answer is spelled. word is never rendered — only its length sizes that line's boxes.",
+              "Optional if every Acrostic.Line supplies its own line prop instead. longWordLength sets the box count; smallWordStart/smallWordEnd (0-indexed, inclusive) mark the small word — its first letter contributes to the answer.",
           },
           {
             name: 'solution',
             type: 'string',
-            description: "The final answer, spelled by the first letter of each line's guess.",
+            description: "The final answer, spelled by the first letter of each line's small word.",
+          },
+          {
+            name: 'lettersInNextWord',
+            type: 'boolean',
+            description:
+              "When true, every letter of a line's small word must also appear among the next line's typed letters (multiset containment) before the puzzle counts as complete. No effect on the last line.",
           },
           {
             name: 'guesses',
@@ -94,7 +113,15 @@ export function AcrosticDocs() {
 
       <h3>Acrostic.Line / Clue / Word props</h3>
       <PropsTable
-        rows={[{ name: 'index', type: 'number', description: 'Which line this renders, 0-indexed. Required on all three.' }]}
+        rows={[
+          { name: 'index', type: 'number', description: 'Which line this renders, 0-indexed. Required on all three.' },
+          {
+            name: 'line',
+            type: '{ clue: string; longWordLength: number; smallWordStart: number; smallWordEnd: number }',
+            description:
+              "Acrostic.Line only. This line's own layout, as an alternative to including it in Root's lines array — overrides that array's entry at index if both are given.",
+          },
+        ]}
       />
 
       <h3>Acrostic.Box props</h3>
@@ -112,12 +139,13 @@ export function AcrosticDocs() {
 
       <p className="docs-note">
         A line only counts toward <code>complete</code>/<code>solved</code> once every box in it is filled —
-        typing just a first letter updates the live <code>answer</code> preview but doesn't mark the puzzle
-        solvable until each word is fully guessed.
+        typing just the small word's first letter updates the live <code>answer</code> preview but doesn't
+        mark the puzzle solvable until the whole long word is filled in.
       </p>
 
       <h3>Usage</h3>
-      <CodeBlock code={USAGE} />
+      <CodeBlock code={USAGE_ROOT} />
+      <CodeBlock code={USAGE_LINE} />
     </section>
   )
 }

@@ -82,20 +82,21 @@ current guess into a list rendered below the puzzle.
 
 ### `Acrostic` — src/lib/acrostic
 
-A clue chain: each line has a clue and an answer word. The word itself is never shown — instead each line
-renders a row of blank boxes (one per letter) that the player types their guess into directly, styled like
-Cryptex's letter boxes but freeform (no cycling). The first letter of each line's guess, in order, spells
-the final answer.
+A clue chain: each line has a clue and a row of blank boxes the player types their guess into directly, styled
+like Cryptex's letter boxes but freeform (no cycling) — no answer text is ever stored or rendered, only how
+many boxes there are. The whole typed word is the **long word**; a configurable span within it is the
+**small word**. Each line's small word contributes its first letter, in order, to the final answer.
 
 ```tsx
 import { Acrostic } from './lib/acrostic'
 
+// A 6-box long word whose small word spans boxes 2-4 (0-indexed).
 const lines = [
-  { clue: 'Unlocked, unsealed, or begun', word: 'OPENED' },
-  { clue: 'Dwellings where families live', word: 'HOUSES' },
+  { clue: 'Unlocked, unsealed, or begun', longWordLength: 6, smallWordStart: 1, smallWordEnd: 3 },
+  { clue: 'Dwellings where families live', longWordLength: 6, smallWordStart: 2, smallWordEnd: 4 },
 ]
 
-<Acrostic.Root lines={lines} solution="OH" onSolvedChange={console.log}>
+<Acrostic.Root lines={lines} solution="PU" onSolvedChange={console.log}>
   {lines.map((_, index) => (
     <Acrostic.Line key={index} index={index} />
   ))}
@@ -105,14 +106,25 @@ const lines = [
 </Acrostic.Root>
 ```
 
+Lines don't have to live on Root — each `Acrostic.Line` can own its layout directly via its own `line` prop
+instead (overriding Root's array entry at that index if both are given), so `lines` on Root is optional:
+
+```tsx
+<Acrostic.Root solution="PU" onSolvedChange={console.log}>
+  <Acrostic.Line index={0} line={{ clue: 'Unlocked, unsealed, or begun', longWordLength: 6, smallWordStart: 1, smallWordEnd: 3 }} />
+  <Acrostic.Line index={1} line={{ clue: 'Dwellings where families live', longWordLength: 6, smallWordStart: 2, smallWordEnd: 4 }} />
+  <Acrostic.Answer />
+</Acrostic.Root>
+```
+
 **Anatomy**
 
 | Part | Description |
 | --- | --- |
 | `Acrostic.Root` | Owns the puzzle state and provides it to every child part. |
-| `Acrostic.Line` | One clue + answer row for `index`. Composes `Acrostic.Clue` and `Acrostic.Word` internally. |
+| `Acrostic.Line` | One clue + box row for `index`. Composes `Acrostic.Clue` and `Acrostic.Word` internally. Can own its layout via its own `line` prop instead of Root's `lines` array. |
 | `Acrostic.Clue` | The clue text for `index` (defaults to `lines[index].clue`). |
-| `Acrostic.Word` | The row of blank input boxes for `index`'s answer, sized to that answer's length. |
+| `Acrostic.Word` | The row of blank input boxes for `index`'s long word, sized to `lines[index].longWordLength`. |
 | `Acrostic.Box` | One directly-typeable, single-letter input box within a line's guess. |
 | `Acrostic.Answer` | Displays the assembled final answer (lines with no first letter yet render as `_`). |
 | `Acrostic.SolvedIndicator` | Renders its children once `solved` is true, otherwise renders `fallback`. |
@@ -121,8 +133,9 @@ const lines = [
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `lines` | `{ clue: string; word: string }[]` | — | One clue + answer word per line, in the order the final answer is spelled. `word` is never rendered — only its length sizes that line's boxes. |
-| `solution` | `string` | — | The final answer, spelled by the first letter of each line's guess. |
+| `lines` | `{ clue: string; longWordLength: number; smallWordStart: number; smallWordEnd: number }[]` | — | Optional if every `Acrostic.Line` supplies its own `line` prop instead. `longWordLength` sets the box count; `smallWordStart`/`smallWordEnd` (0-indexed, inclusive) mark the small word — its first letter contributes to the answer. |
+| `solution` | `string` | — | The final answer, spelled by the first letter of each line's small word. |
+| `lettersInNextWord` | `boolean` | — | When true, every letter of a line's small word must also appear among the next line's typed letters (multiset containment) before the puzzle counts as complete. No effect on the last line. |
 | `guesses` | `string[][]` | — | Controlled per-line, per-box guessed letters. |
 | `defaultGuesses` | `string[][]` | `[]` | Initial per-line guesses when uncontrolled. |
 | `disabled` | `boolean` | — | Disables typing into every box. |
@@ -131,17 +144,18 @@ const lines = [
 | `id` | `string` | — | Base id used to derive part ids. |
 
 **`Acrostic.Line` / `Acrostic.Clue` / `Acrostic.Word` props**: `index: number` (0-indexed line, required on
-all three).
+all three). `Acrostic.Line` also takes an optional `line: { clue, longWordLength, smallWordStart, smallWordEnd }`.
 
 **`Acrostic.Box` props**: `lineIndex: number`, `boxIndex: number`.
 
 **`Acrostic.SolvedIndicator` props**: `fallback?: ReactNode` (content shown while not solved).
 
-A line only counts toward `complete`/`solved` once every box in it is filled — typing just a first letter
-updates the live `answer` preview but doesn't mark the puzzle solvable until each word is fully guessed.
+A line only counts toward `complete`/`solved` once every box in it is filled — typing just the small word's
+first letter updates the live `answer` preview but doesn't mark the puzzle solvable until the whole long word
+is filled in.
 
-The bundled example (`src/examples/acrostic-example.tsx`) spells **PUZZLE** from six answer words: PENCIL,
-UMBRELLA, ZEBRA, ZIGZAG, LANTERN, ENGINE.
+The bundled example (`src/examples/acrostic-example.tsx`) spells **PUZZLE** from six lines, each with a
+2–4 letter small word embedded in a 6-letter long word.
 
 ## Architecture
 

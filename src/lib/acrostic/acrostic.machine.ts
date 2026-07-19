@@ -1,16 +1,42 @@
 import { createMachine } from '@zag-js/core'
 import type { AcrosticLine, AcrosticSchema } from './acrostic.types'
 
-/** Builds a per-line, per-box guess grid sized to each line's word length. */
+/** Merges Root's `lines` array with any per-line registrations, override winning per index. */
+function getEffectiveLines(lines: AcrosticLine[], overrides: Record<number, AcrosticLine>): AcrosticLine[] {
+  if (lines.length > 0) {
+    return lines.map((line, i) => overrides[i] ?? line)
+  }
+  const indexes = Object.keys(overrides).map(Number)
+  if (indexes.length === 0) return []
+  const maxIndex = Math.max(...indexes)
+  return Array.from({ length: maxIndex + 1 }, (_, i) => overrides[i] ?? { clue: '', longWordLength: 0, smallWordStart: 0, smallWordEnd: 0 })
+}
+
+/** Builds a per-line, per-box guess grid sized to each line's long-word length. */
 function fill(lines: AcrosticLine[], existing?: string[][]): string[][] {
   return lines.map((line, i) => {
     const existingLine = existing?.[i]
-    return Array.from({ length: line.word.length }, (_, j) => existingLine?.[j] ?? '')
+    return Array.from({ length: line.longWordLength }, (_, j) => existingLine?.[j] ?? '')
   })
 }
 
+/** The assembled answer: each line contributes its small word's first letter. */
 function computeAnswer(lines: AcrosticLine[], guesses: string[][]): string {
-  return lines.map((_, i) => guesses[i]?.[0]?.toUpperCase() || '_').join('')
+  return lines.map((line, i) => guesses[i]?.[line.smallWordStart]?.toUpperCase() || '_').join('')
+}
+
+/** Whether every letter of `small` is present in `big` (multiset containment, case-insensitive). */
+function lettersContained(small: string, big: string): boolean {
+  const remaining = new Map<string, number>()
+  for (const letter of big.toUpperCase()) {
+    remaining.set(letter, (remaining.get(letter) ?? 0) + 1)
+  }
+  for (const letter of small.toUpperCase()) {
+    const count = remaining.get(letter) ?? 0
+    if (count === 0) return false
+    remaining.set(letter, count - 1)
+  }
+  return true
 }
 
 export const machine = createMachine<AcrosticSchema>({
@@ -18,6 +44,7 @@ export const machine = createMachine<AcrosticSchema>({
     return {
       lines: props.lines ?? [],
       solution: props.solution,
+      lettersInNextWord: props.lettersInNextWord,
       guesses: props.guesses,
       defaultGuesses: props.defaultGuesses ?? [],
       disabled: props.disabled,
@@ -41,18 +68,32 @@ export const machine = createMachine<AcrosticSchema>({
           prop('onAnswerChange')?.({ answer: computeAnswer(prop('lines'), guesses), guesses })
         },
       })),
+      lineOverrides: bindable<Record<number, AcrosticLine>>(() => ({
+        defaultValue: {},
+      })),
     }
   },
 
   computed: {
-    lineCount: ({ prop }) => prop('lines').length,
-    answer: ({ prop, context }) => computeAnswer(prop('lines'), context.get('guesses')),
-    complete: ({ context, computed }) => {
+    effectiveLines: ({ prop, context }) => getEffectiveLines(prop('lines'), context.get('lineOverrides')),
+    lineCount: ({ computed }) => computed('effectiveLines').length,
+    answer: ({ context, computed }) => computeAnswer(computed('effectiveLines'), context.get('guesses')),
+    complete: ({ context, prop, computed }) => {
+      const lines = computed('effectiveLines')
       const guesses = context.get('guesses')
-      return (
+      const allFilled =
         guesses.length === computed('lineCount') &&
         guesses.every((line) => line.length > 0 && line.every((letter) => letter !== ''))
-      )
+      if (!allFilled) return false
+      if (!prop('lettersInNextWord')) return true
+
+      for (let i = 0; i < lines.length - 1; i++) {
+        const line = lines[i]
+        const smallWord = guesses[i].slice(line.smallWordStart, line.smallWordEnd + 1).join('')
+        const nextWord = guesses[i + 1].join('')
+        if (!lettersContained(smallWord, nextWord)) return false
+      }
+      return true
     },
     solved: ({ prop, computed }) => {
       const solution = prop('solution')
@@ -77,6 +118,12 @@ export const machine = createMachine<AcrosticSchema>({
     'GUESSES.CLEAR': {
       actions: ['clearGuesses'],
     },
+    'LINE.REGISTER': {
+      actions: ['registerLine'],
+    },
+    'LINE.UNREGISTER': {
+      actions: ['unregisterLine'],
+    },
   },
 
   states: {
@@ -85,18 +132,28 @@ export const machine = createMachine<AcrosticSchema>({
 
   implementations: {
     actions: {
-      setBoxLetter({ context, event, prop }) {
-        const guesses = fill(prop('lines'), context.get('guesses'))
+      setBoxLetter({ context, event, computed }) {
+        const guesses = fill(computed('effectiveLines'), context.get('guesses'))
         const line = guesses[event.lineIndex]
         if (!line) return
         line[event.boxIndex] = event.letter
         context.set('guesses', guesses)
       },
-      setGuesses({ context, event, prop }) {
-        context.set('guesses', fill(prop('lines'), event.guesses))
+      setGuesses({ context, event, computed }) {
+        context.set('guesses', fill(computed('effectiveLines'), event.guesses))
       },
-      clearGuesses({ context, prop }) {
-        context.set('guesses', fill(prop('lines'), []))
+      clearGuesses({ context, computed }) {
+        context.set('guesses', fill(computed('effectiveLines'), []))
+      },
+      registerLine({ context, event, prop }) {
+        const overrides = { ...context.get('lineOverrides'), [event.index]: event.line }
+        context.set('lineOverrides', overrides)
+        context.set('guesses', fill(getEffectiveLines(prop('lines'), overrides), context.get('guesses')))
+      },
+      unregisterLine({ context, event }) {
+        const overrides = { ...context.get('lineOverrides') }
+        delete overrides[event.index]
+        context.set('lineOverrides', overrides)
       },
       notifySolvedChange({ prop, computed }) {
         prop('onSolvedChange')?.(computed('solved'))
