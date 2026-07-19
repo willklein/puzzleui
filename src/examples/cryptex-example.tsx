@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Cryptex } from '../lib/cryptex'
+import { CryptexDocs } from '../docs/cryptex-docs'
 
 interface Attempt {
   guess: string
@@ -80,6 +81,10 @@ export function CryptexExample() {
             ))}
           </ol>
         )}
+      </div>
+
+      <div className="example-docs">
+        <CryptexDocs />
       </div>
     </div>
   )

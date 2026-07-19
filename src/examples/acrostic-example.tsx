@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Acrostic, type AcrosticLineData } from '../lib/acrostic'
+import { AcrosticDocs } from '../docs/acrostic-docs'
 
 const SOLUTION = 'PUZZLE'
 
@@ -47,6 +48,10 @@ export function AcrosticExample() {
       <p className="acrostic-debug">
         Current answer: <code>{answer || '(nothing selected yet)'}</code> {solved ? '✓' : ''}
       </p>
+
+      <div className="example-docs">
+        <AcrosticDocs />
+      </div>
     </div>
   )
 }

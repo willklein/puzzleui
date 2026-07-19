@@ -402,3 +402,145 @@ body {
   font-family: var(--font-mono);
   color: var(--text);
 }
+
+/* Docs */
+
+.example-docs {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+
+.docs-section h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
+}
+
+.docs-section h3 {
+  margin: 1.75rem 0 0.6rem;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.docs-lede {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
+.docs-lede code {
+  font-family: var(--font-mono);
+  color: var(--text);
+  font-size: 0.9em;
+}
+
+.docs-note {
+  margin: 0 0 0.75rem;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.docs-note code {
+  font-family: var(--font-mono);
+  color: var(--text);
+  font-size: 0.9em;
+}
+
+.docs-anatomy {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.docs-anatomy-row {
+  display: grid;
+  grid-template-columns: 11rem 1fr;
+  gap: 0.5rem 1rem;
+  align-items: baseline;
+}
+
+.docs-anatomy-row dt {
+  font-weight: 500;
+}
+
+.docs-anatomy-row dt code {
+  font-family: var(--font-mono);
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+
+.docs-anatomy-row dd {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.87rem;
+}
+
+.docs-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.docs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.docs-table th {
+  text-align: left;
+  padding: 0.6rem 0.85rem;
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+.docs-table td {
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+  vertical-align: top;
+}
+
+.docs-table tr:last-child td {
+  border-bottom: none;
+}
+
+.docs-table td:first-child,
+.docs-table td:nth-child(2) {
+  white-space: nowrap;
+}
+
+.docs-table code {
+  font-family: var(--font-mono);
+  color: var(--text);
+  font-size: 0.82rem;
+}
+
+.docs-table-dash {
+  color: var(--text-dim);
+  opacity: 0.5;
+}
+
+.docs-code {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  overflow-x: auto;
+}
+
+.docs-code code {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text);
+  white-space: pre;
+}
