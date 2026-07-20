@@ -6,7 +6,7 @@ import './styles/globals.css'
 
 // No router library yet — just two static routes. `/blue-prince` is intentionally
 // not linked from the main page; visit it directly. Compare against BASE_URL so
-// this still resolves correctly when served from a subpath (e.g. GitHub Pages).
+// this still resolves correctly if the site is ever served from a subpath again.
 const path = window.location.pathname.replace(/\/$/, '')
 const bluePrincePath = `${import.meta.env.BASE_URL}blue-prince`.replace(/\/+/g, '/').replace(/\/$/, '')
 const page = path === bluePrincePath ? <BluePrincePage /> : <App />

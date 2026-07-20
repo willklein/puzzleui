@@ -40,6 +40,11 @@ jobs:
       - name: Typecheck and build
         run: pnpm run build
 
+      - name: Build Storybook
+        # Outputs straight into dist/storybook (see the build-storybook script),
+        # so it ships as part of the same Pages artifact, at /storybook.
+        run: pnpm run build-storybook
+
       - name: Add SPA fallback for GitHub Pages
         # GitHub Pages has no server-side rewrites. It does serve 404.html for
         # any unmatched path, and our routing only reads location.pathname on

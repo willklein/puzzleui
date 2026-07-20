@@ -1,0 +1,12 @@
+[build]
+  command = "pnpm run build && pnpm run build-storybook"
+  publish = "dist"
+
+# SPA fallback for client-side routes like /blue-prince: Netlify serves an
+# actual matching file (e.g. everything under /storybook) before falling
+# back to a redirect, so this catch-all doesn't interfere with the static
+# Storybook build living alongside the main app in dist/.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
