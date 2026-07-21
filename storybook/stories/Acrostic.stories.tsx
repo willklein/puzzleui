@@ -55,3 +55,28 @@ export const Solved: Story = {
     defaultGuesses: SOLVED_WORDS.map((word) => word.split('')),
   },
 }
+
+const CHAIN_LINES: AcrosticLineData[] = [
+  { clue: 'Long vehicle that runs on rails', longWordLength: 5, smallWordStart: 1, smallWordEnd: 3 },
+  { clue: 'Steps between floors', longWordLength: 6, smallWordStart: 0, smallWordEnd: 2 },
+  { clue: 'Very tall landform', longWordLength: 8, smallWordStart: 0, smallWordEnd: 2 },
+]
+// TRAIN's small word "RAI" is contained in STAIRS (valid) — but STAIRS's own
+// small word "STA" is not contained in MOUNTAIN, which has no S (invalid).
+const CHAIN_WORDS = ['TRAIN', 'STAIRS', 'MOUNTAIN']
+
+/** With `lettersInNextWord` on, once both sides are fully typed a line's small word turns green if its letters carry into the next line's word, red if they don't. */
+export const LettersInNextWord: Story = {
+  render: () => (
+    <Acrostic.Root
+      className="acrostic"
+      lines={CHAIN_LINES}
+      lettersInNextWord
+      defaultGuesses={CHAIN_WORDS.map((word) => word.split(''))}
+    >
+      {CHAIN_LINES.map((_, index) => (
+        <Acrostic.Line key={index} index={index} className="acrostic-line" />
+      ))}
+    </Acrostic.Root>
+  ),
+}

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs } from "@ark-ui/react/tabs";
 import { Cryptex } from "../lib/cryptex";
-import { Acrostic, type AcrosticLineData } from "../lib/acrostic";
+import { Acrostic, type AcrosticProps } from "../lib/acrostic";
 
 const STORAGE_PREFIX = "blue-prince";
 
@@ -40,8 +40,7 @@ interface AcrosticPuzzleData {
   title: string;
   description: string;
   directions: string[];
-  lines: AcrosticLineData[];
-  solution?: string;
+  props: AcrosticProps;
 }
 
 // THICk is spelled out in the clue itself, so the candidates below are seeded
@@ -98,44 +97,48 @@ const ACROSTIC_PUZZLE: AcrosticPuzzleData = {
     "Each Letter in the small word will be included in the next clue's long word.",
     "Lastly, the first letter of each small word forms this week's solution - a member of the sixth clue!",
   ],
-  lines: [
-    {
-      clue: "Kept behind locked doors.",
-      longWordLength: 6,
-      smallWordStart: 2,
-      smallWordEnd: 4,
-    },
-    {
-      clue: "Can affect one greatly when made by someone with a strong spirit.",
-      longWordLength: 7,
-      smallWordStart: 1,
-      smallWordEnd: 3,
-    },
-    {
-      clue: "Makes the validity of a statement clear.",
-      longWordLength: 6,
-      smallWordStart: 0,
-      smallWordEnd: 2,
-    },
-    {
-      clue: "On a certain scale, this is very hot.",
-      longWordLength: 6,
-      smallWordStart: 3,
-      smallWordEnd: 5,
-    },
-    {
-      clue: "Informs you that there's no school today.",
-      longWordLength: 6,
-      smallWordStart: 3,
-      smallWordEnd: 5,
-    },
-    {
-      clue: "A group composed of members that have similar characteristics.",
-      longWordLength: 6,
-      smallWordStart: 2,
-      smallWordEnd: 5,
-    },
-  ],
+
+  props: {
+    lettersInNextWord: true,
+    lines: [
+      {
+        clue: "Kept behind locked doors.",
+        longWordLength: 6,
+        smallWordStart: 2,
+        smallWordEnd: 4,
+      },
+      {
+        clue: "Can affect one greatly when made by someone with a strong spirit.",
+        longWordLength: 7,
+        smallWordStart: 1,
+        smallWordEnd: 3,
+      },
+      {
+        clue: "Makes the validity of a statement clear.",
+        longWordLength: 6,
+        smallWordStart: 0,
+        smallWordEnd: 2,
+      },
+      {
+        clue: "On a certain scale, this is very hot.",
+        longWordLength: 6,
+        smallWordStart: 3,
+        smallWordEnd: 5,
+      },
+      {
+        clue: "Informs you that there's no school today.",
+        longWordLength: 6,
+        smallWordStart: 3,
+        smallWordEnd: 5,
+      },
+      {
+        clue: "A group composed of members that have similar characteristics.",
+        longWordLength: 6,
+        smallWordStart: 2,
+        smallWordEnd: 5,
+      },
+    ],
+  },
 };
 
 function CryptexPuzzle({
@@ -193,9 +196,8 @@ function AcrosticPuzzle({
   value,
   title,
   description,
-  lines,
-  solution,
   directions,
+  props: { lines, solution, lettersInNextWord },
 }: AcrosticPuzzleData) {
   const [defaultGuesses] = useState(() => loadPersisted<string[][]>(value));
 
@@ -215,10 +217,11 @@ function AcrosticPuzzle({
         className="acrostic"
         lines={lines}
         solution={solution}
-        defaultGuesses={defaultGuesses}
+        lettersInNextWord={lettersInNextWord}
         onAnswerChange={(details) => savePersisted(value, details.guesses)}
+        defaultGuesses={defaultGuesses}
       >
-        {lines.map((_, index) => (
+        {lines!.map((_, index) => (
           <Acrostic.Line key={index} index={index} className="acrostic-line" />
         ))}
 
@@ -231,7 +234,7 @@ function AcrosticPuzzle({
           className="acrostic-solved"
           fallback={<span>Keep going…</span>}
         >
-          Solved! The answers spell {solution}.
+          Solved? The answers spell {solution}.
         </Acrostic.SolvedIndicator>
       </Acrostic.Root>
     </div>

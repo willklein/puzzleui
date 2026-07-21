@@ -39,6 +39,36 @@ function lettersContained(small: string, big: string): boolean {
   return true
 }
 
+function isSpanFilled(guessLine: string[], start: number, end: number): boolean {
+  for (let i = start; i <= end; i++) {
+    if (!guessLine[i]) return false
+  }
+  return true
+}
+
+/**
+ * Per line, whether its small word's letters all appear in the next line's
+ * typed letters: `true`/`false` once both sides are fully typed, `undefined`
+ * while there's not yet enough to check (or `lettersInNextWord` is off, or
+ * it's the last line, which has no next line to check against).
+ */
+function getChainStatuses(
+  lines: AcrosticLine[],
+  guesses: string[][],
+  lettersInNextWord: boolean | undefined,
+): Array<boolean | undefined> {
+  return lines.map((line, i) => {
+    if (!lettersInNextWord || i === lines.length - 1) return undefined
+    const currentGuess = guesses[i] ?? []
+    const nextGuess = guesses[i + 1] ?? []
+    const smallWordFilled = isSpanFilled(currentGuess, line.smallWordStart, line.smallWordEnd)
+    const nextWordFilled = nextGuess.length > 0 && nextGuess.every((letter) => letter !== '')
+    if (!smallWordFilled || !nextWordFilled) return undefined
+    const smallWord = currentGuess.slice(line.smallWordStart, line.smallWordEnd + 1).join('')
+    return lettersContained(smallWord, nextGuess.join(''))
+  })
+}
+
 export const machine = createMachine<AcrosticSchema>({
   props({ props }) {
     return {
@@ -81,8 +111,9 @@ export const machine = createMachine<AcrosticSchema>({
     effectiveLines: ({ prop, context }) => getEffectiveLines(prop('lines'), context.get('lineOverrides')),
     lineCount: ({ computed }) => computed('effectiveLines').length,
     answer: ({ context, computed }) => computeAnswer(computed('effectiveLines'), context.get('guesses')),
+    chainStatuses: ({ prop, context, computed }) =>
+      getChainStatuses(computed('effectiveLines'), context.get('guesses'), prop('lettersInNextWord')),
     complete: ({ context, prop, computed }) => {
-      const lines = computed('effectiveLines')
       const guesses = context.get('guesses')
       const allFilled =
         guesses.length === computed('lineCount') &&
@@ -90,13 +121,7 @@ export const machine = createMachine<AcrosticSchema>({
       if (!allFilled) return false
       if (!prop('lettersInNextWord')) return true
 
-      for (let i = 0; i < lines.length - 1; i++) {
-        const line = lines[i]
-        const smallWord = guesses[i].slice(line.smallWordStart, line.smallWordEnd + 1).join('')
-        const nextWord = guesses[i + 1].join('')
-        if (!lettersContained(smallWord, nextWord)) return false
-      }
-      return true
+      return computed('chainStatuses').every((status) => status !== false)
     },
     solved: ({ prop, computed }) => {
       const solution = prop('solution')

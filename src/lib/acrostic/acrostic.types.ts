@@ -58,6 +58,12 @@ export interface AcrosticSchema {
     effectiveLines: AcrosticLine[]
     lineCount: number
     answer: string
+    /**
+     * Per line, whether its small word's letters all appear in the next
+     * line's typed letters. `undefined` while there's not yet enough typed
+     * to check (or `lettersInNextWord` is off, or it's the last line).
+     */
+    chainStatuses: Array<boolean | undefined>
     complete: boolean
     solved: boolean
   }
@@ -77,6 +83,12 @@ export interface AcrosticApi<T extends PropTypes = PropTypes> {
   guesses: string[][]
   /** The assembled final answer, from each line's small word; unfilled lines render as `_`. */
   answer: string
+  /**
+   * Per line, whether its small word's letters all appear in the next
+   * line's typed letters. `undefined` while there's not yet enough typed
+   * to check (or `lettersInNextWord` is off, or it's the last line).
+   */
+  chainStatuses: Array<boolean | undefined>
   /** Whether every line has every box filled in (and, if `lettersInNextWord`, the chain rule holds). */
   complete: boolean
   /** Whether `answer` matches `solution` (always `false` if no `solution` was given). */

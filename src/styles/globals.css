@@ -639,6 +639,14 @@ body {
   border-color: var(--border-strong);
 }
 
+.acrostic-line[data-chain-valid] {
+  border-color: var(--accent-strong);
+}
+
+.acrostic-line[data-chain-invalid] {
+  border-color: var(--danger);
+}
+
 [data-scope='acrostic'][data-part='clue'] {
   flex: 1;
   color: var(--text-dim);
@@ -694,6 +702,30 @@ body {
   background: var(--accent);
   color: #0f1115;
   font-weight: 700;
+}
+
+/* lettersInNextWord feedback — only set once both this line's small word and
+   the next line's letters are fully typed, so this overrides the plain
+   in-word/answer-box tinting above. */
+[data-scope='acrostic'][data-part='box'][data-chain-valid] {
+  border-color: var(--accent-strong);
+  background: color-mix(in srgb, var(--accent-strong) 20%, var(--surface-raised));
+}
+
+[data-scope='acrostic'][data-part='box'][data-chain-invalid] {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 20%, var(--surface-raised));
+  color: var(--danger);
+}
+
+[data-scope='acrostic'][data-part='box'][data-answer-box][data-chain-valid] {
+  background: var(--accent-strong);
+  color: #0f1115;
+}
+
+[data-scope='acrostic'][data-part='box'][data-answer-box][data-chain-invalid] {
+  background: var(--danger);
+  color: #0f1115;
 }
 
 [data-scope='acrostic'][data-part='box']:disabled {

@@ -12,11 +12,13 @@ export function connect<T extends PropTypes>(service: AcrosticService, normalize
   const complete = computed('complete')
   const disabled = !!prop('disabled')
   const focusTarget = context.get('focusTarget')
+  const chainStatuses = computed('chainStatuses')
 
   return {
     lines,
     guesses,
     answer: computed('answer'),
+    chainStatuses,
     complete,
     solved,
     disabled,
@@ -65,11 +67,14 @@ export function connect<T extends PropTypes>(service: AcrosticService, normalize
     getLineProps(lineIndex) {
       const line = guesses[lineIndex] ?? []
       const filled = line.length > 0 && line.every((letter) => letter !== '')
+      const chainStatus = chainStatuses[lineIndex]
       return normalize.element({
         'data-scope': 'acrostic',
         'data-part': 'line',
         'data-index': lineIndex,
         'data-filled': dataAttr(filled),
+        'data-chain-valid': dataAttr(chainStatus === true),
+        'data-chain-invalid': dataAttr(chainStatus === false),
       })
     },
 
@@ -94,6 +99,7 @@ export function connect<T extends PropTypes>(service: AcrosticService, normalize
       const letter = guesses[lineIndex]?.[boxIndex] ?? ''
       const inWord = !!line && boxIndex >= line.smallWordStart && boxIndex <= line.smallWordEnd
       const isAnswerBox = !!line && boxIndex === line.smallWordStart
+      const chainStatus = inWord ? chainStatuses[lineIndex] : undefined
 
       return normalize.input({
         type: 'text',
@@ -105,6 +111,8 @@ export function connect<T extends PropTypes>(service: AcrosticService, normalize
         'data-in-word': dataAttr(inWord),
         'data-answer-box': dataAttr(isAnswerBox),
         'data-filled': dataAttr(!!letter),
+        'data-chain-valid': dataAttr(chainStatus === true),
+        'data-chain-invalid': dataAttr(chainStatus === false),
         disabled,
         'aria-label': `Line ${lineIndex + 1}, letter ${boxIndex + 1}`,
         onChange(event) {

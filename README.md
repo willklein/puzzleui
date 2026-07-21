@@ -135,7 +135,7 @@ instead (overriding Root's array entry at that index if both are given), so `lin
 | --- | --- | --- | --- |
 | `lines` | `{ clue: string; longWordLength: number; smallWordStart: number; smallWordEnd: number }[]` | — | Optional if every `Acrostic.Line` supplies its own `line` prop instead. `longWordLength` sets the box count; `smallWordStart`/`smallWordEnd` (0-indexed, inclusive) mark the small word — its first letter contributes to the answer. |
 | `solution` | `string` | — | The final answer, spelled by the first letter of each line's small word. |
-| `lettersInNextWord` | `boolean` | — | When true, every letter of a line's small word must also appear among the next line's typed letters (multiset containment) before the puzzle counts as complete. No effect on the last line. |
+| `lettersInNextWord` | `boolean` | — | When true, every letter of a line's small word must also appear among the next line's typed letters (multiset containment) before the puzzle counts as complete. No effect on the last line. Once both sides are fully typed, the small word's boxes (and the line itself) pick up `data-chain-valid`/`data-chain-invalid` for styling. |
 | `guesses` | `string[][]` | — | Controlled per-line, per-box guessed letters. |
 | `defaultGuesses` | `string[][]` | `[]` | Initial per-line guesses when uncontrolled. |
 | `disabled` | `boolean` | — | Disables typing into every box. |

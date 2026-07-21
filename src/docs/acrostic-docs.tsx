@@ -88,7 +88,7 @@ export function AcrosticDocs() {
             name: 'lettersInNextWord',
             type: 'boolean',
             description:
-              "When true, every letter of a line's small word must also appear among the next line's typed letters (multiset containment) before the puzzle counts as complete. No effect on the last line.",
+              "When true, every letter of a line's small word must also appear among the next line's typed letters (multiset containment) before the puzzle counts as complete. No effect on the last line. Once both sides are fully typed, the small word's boxes (and the line itself) pick up data-chain-valid or data-chain-invalid for styling.",
           },
           {
             name: 'guesses',
