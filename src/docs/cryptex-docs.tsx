@@ -26,16 +26,16 @@ export function CryptexDocs() {
     <section className="docs-section">
       <h2>Cryptex</h2>
       <p className="docs-lede">
-        Models the rotating letter-lock from <em>The Da Vinci Code</em>: a fixed word length, and for each
-        position a set of candidate letters a player can dial in. Give it a <code>solution</code> and it
-        reports when the dialed word matches.
+        Models the rotating letter-lock from <em>The Da Vinci Code</em>: a fixed word length, and for each position a
+        set of candidate letters a player can dial in. Give it a <code>solution</code> and it reports when the dialed
+        word matches.
       </p>
 
       <h3>Anatomy</h3>
       <AnatomyList
         parts={[
           { name: 'Cryptex.Root', description: 'Owns the puzzle state and provides it to every child part.' },
-          { name: 'Cryptex.Label', description: "An optional label for the puzzle." },
+          { name: 'Cryptex.Label', description: 'An optional label for the puzzle.' },
           {
             name: 'Cryptex.Wheel',
             description:
@@ -54,12 +54,15 @@ export function CryptexDocs() {
 
       <h3>Keyboard interactions</h3>
       <p className="docs-note">
-        Only one wheel is in the tab order at a time (roving tabindex). Click a wheel, or tab into the puzzle,
-        to focus the first one.
+        Only one wheel is in the tab order at a time (roving tabindex). Click a wheel, or tab into the puzzle, to focus
+        the first one.
       </p>
       <AnatomyList
         parts={[
-          { name: '↑ / ↓', description: "Dial the focused wheel to the candidate above/below it, wrapping at the ends." },
+          {
+            name: '↑ / ↓',
+            description: 'Dial the focused wheel to the candidate above/below it, wrapping at the ends.',
+          },
           { name: '← / →', description: 'Move focus to the neighboring wheel, wrapping at the ends.' },
         ]}
       />
@@ -71,7 +74,7 @@ export function CryptexDocs() {
             name: 'letters',
             type: 'string[][]',
             description:
-              "Candidate letters for each wheel, top-to-bottom. letters[i] are the options for position i; the word length is letters.length.",
+              'Candidate letters for each wheel, top-to-bottom. letters[i] are the options for position i; the word length is letters.length.',
           },
           {
             name: 'solution',
@@ -86,8 +89,16 @@ export function CryptexDocs() {
             default: '[]',
           },
           { name: 'disabled', type: 'boolean', description: 'Disables interaction with every wheel.' },
-          { name: 'onValueChange', type: '(details: { value: string[]; valueAsString: string }) => void', description: "Called whenever any wheel's value changes." },
-          { name: 'onSolvedChange', type: '(solved: boolean) => void', description: 'Called whenever `solved` changes.' },
+          {
+            name: 'onValueChange',
+            type: '(details: { value: string[]; valueAsString: string }) => void',
+            description: "Called whenever any wheel's value changes.",
+          },
+          {
+            name: 'onSolvedChange',
+            type: '(solved: boolean) => void',
+            description: 'Called whenever `solved` changes.',
+          },
           { name: 'id', type: 'string', description: 'Base id used to derive part ids.' },
         ]}
       />
@@ -102,7 +113,9 @@ export function CryptexDocs() {
 
       <h3>Cryptex.SolvedIndicator props</h3>
       <PropsTable
-        rows={[{ name: 'fallback', type: 'ReactNode', description: 'Content to render while the puzzle is not yet solved.' }]}
+        rows={[
+          { name: 'fallback', type: 'ReactNode', description: 'Content to render while the puzzle is not yet solved.' },
+        ]}
       />
 
       <h3>Usage</h3>

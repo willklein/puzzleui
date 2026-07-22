@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "storybook": "storybook dev -c storybook -p 6006",
-    "build-storybook": "storybook build -c storybook -o dist/storybook"
+    "build-storybook": "storybook build -c storybook -o dist/storybook",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@ark-ui/react": "^4.9.2",
@@ -25,6 +27,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
+    "prettier": "^3.9.6",
     "storybook": "^10.5.2",
     "typescript": "^5.6.3",
     "vite": "^5.4.10"

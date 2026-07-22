@@ -95,8 +95,8 @@ export function AcrosticExample() {
     <div className="example">
       <div className="example-toolbar">
         <p className="example-intro">
-          Each line has a clue — type your best guess into its boxes. A configurable span of letters within
-          each line is the "small word" hiding in the "long word"; its first letter spells the final answer.
+          Each line has a clue — type your best guess into its boxes. A configurable span of letters within each line is
+          the "small word" hiding in the "long word"; its first letter spells the final answer.
         </p>
         <Dialog.Root open={editorOpen} onOpenChange={handleOpenChange}>
           <Dialog.Trigger className="edit-button">Edit</Dialog.Trigger>
@@ -106,9 +106,8 @@ export function AcrosticExample() {
               <Dialog.Content className="dialog-content">
                 <Dialog.Title className="dialog-title">Edit puzzle</Dialog.Title>
                 <Dialog.Description className="dialog-description">
-                  For each line, set a clue, how many letter boxes the long word has, and which span of boxes
-                  (start through end, 1-indexed) is the small word — its first letter is what contributes to
-                  the final answer.
+                  For each line, set a clue, how many letter boxes the long word has, and which span of boxes (start
+                  through end, 1-indexed) is the small word — its first letter is what contributes to the final answer.
                 </Dialog.Description>
 
                 <label className="field">
@@ -122,8 +121,8 @@ export function AcrosticExample() {
                   />
                 </label>
                 <p className="field-hint">
-                  Leave blank if the puzzle shouldn't have a single correct answer — it'll still track the
-                  assembled answer, just never report as solved.
+                  Leave blank if the puzzle shouldn't have a single correct answer — it'll still track the assembled
+                  answer, just never report as solved.
                 </p>
 
                 <label className="field checkbox-field">
@@ -135,8 +134,8 @@ export function AcrosticExample() {
                   <span className="field-label">Require chain: small word's letters must appear in next line</span>
                 </label>
                 <p className="field-hint">
-                  When on, every letter of a line's small word must also appear among the next line's typed
-                  letters before the puzzle can be marked complete. Has no effect on the last line.
+                  When on, every letter of a line's small word must also appear among the next line's typed letters
+                  before the puzzle can be marked complete. Has no effect on the last line.
                 </p>
 
                 <div className="editor-acrostic-lines">

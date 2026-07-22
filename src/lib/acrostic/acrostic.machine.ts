@@ -9,7 +9,10 @@ function getEffectiveLines(lines: AcrosticLine[], overrides: Record<number, Acro
   const indexes = Object.keys(overrides).map(Number)
   if (indexes.length === 0) return []
   const maxIndex = Math.max(...indexes)
-  return Array.from({ length: maxIndex + 1 }, (_, i) => overrides[i] ?? { clue: '', longWordLength: 0, smallWordStart: 0, smallWordEnd: 0 })
+  return Array.from(
+    { length: maxIndex + 1 },
+    (_, i) => overrides[i] ?? { clue: '', longWordLength: 0, smallWordStart: 0, smallWordEnd: 0 },
+  )
 }
 
 /** Builds a per-line, per-box guess grid sized to each line's long-word length. */

@@ -47,6 +47,11 @@ body {
   color: var(--text-dim);
 }
 
+.app-header .app-links {
+  margin: -1.25rem 0 2rem;
+  font-size: 0.85rem;
+}
+
 .app-header a {
   color: var(--accent);
   text-decoration: none;

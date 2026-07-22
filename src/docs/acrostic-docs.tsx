@@ -33,11 +33,10 @@ export function AcrosticDocs() {
     <section className="docs-section">
       <h2>Acrostic</h2>
       <p className="docs-lede">
-        A clue chain: each line has a clue and a row of blank boxes the player types their guess into
-        directly — no answer text is ever stored or rendered, only how many boxes there are. The whole
-        typed word is the <strong>long word</strong>; a configurable span within it is the{' '}
-        <strong>small word</strong>. Each line's small word contributes its first letter, in order, to the
-        final answer.
+        A clue chain: each line has a clue and a row of blank boxes the player types their guess into directly — no
+        answer text is ever stored or rendered, only how many boxes there are. The whole typed word is the{' '}
+        <strong>long word</strong>; a configurable span within it is the <strong>small word</strong>. Each line's small
+        word contributes its first letter, in order, to the final answer.
       </p>
 
       <h3>Anatomy</h3>
@@ -49,7 +48,7 @@ export function AcrosticDocs() {
             description:
               "One clue + box row for `index`. Composes Acrostic.Clue and Acrostic.Word internally. Can own its layout via its own `line` prop instead of Root's `lines` array.",
           },
-          { name: 'Acrostic.Clue', description: "The clue text for `index` (defaults to lines[index].clue)." },
+          { name: 'Acrostic.Clue', description: 'The clue text for `index` (defaults to lines[index].clue).' },
           {
             name: 'Acrostic.Word',
             description: "The row of blank input boxes for `index`'s long word, sized to lines[index].longWordLength.",
@@ -77,7 +76,7 @@ export function AcrosticDocs() {
             name: 'lines',
             type: '{ clue: string; longWordLength: number; smallWordStart: number; smallWordEnd: number }[]',
             description:
-              "Optional if every Acrostic.Line supplies its own line prop instead. longWordLength sets the box count; smallWordStart/smallWordEnd (0-indexed, inclusive) mark the small word — its first letter contributes to the answer.",
+              'Optional if every Acrostic.Line supplies its own line prop instead. longWordLength sets the box count; smallWordStart/smallWordEnd (0-indexed, inclusive) mark the small word — its first letter contributes to the answer.',
           },
           {
             name: 'solution',
@@ -107,7 +106,11 @@ export function AcrosticDocs() {
             type: '(details: { answer: string; guesses: string[][] }) => void',
             description: 'Called whenever any box changes.',
           },
-          { name: 'onSolvedChange', type: '(solved: boolean) => void', description: 'Called whenever `solved` changes.' },
+          {
+            name: 'onSolvedChange',
+            type: '(solved: boolean) => void',
+            description: 'Called whenever `solved` changes.',
+          },
           { name: 'id', type: 'string', description: 'Base id used to derive part ids.' },
         ]}
       />
@@ -135,13 +138,15 @@ export function AcrosticDocs() {
 
       <h3>Acrostic.SolvedIndicator props</h3>
       <PropsTable
-        rows={[{ name: 'fallback', type: 'ReactNode', description: 'Content to render while the puzzle is not yet solved.' }]}
+        rows={[
+          { name: 'fallback', type: 'ReactNode', description: 'Content to render while the puzzle is not yet solved.' },
+        ]}
       />
 
       <p className="docs-note">
-        A line only counts toward <code>complete</code>/<code>solved</code> once every box in it is filled —
-        typing just the small word's first letter updates the live <code>answer</code> preview but doesn't
-        mark the puzzle solvable until the whole long word is filled in.
+        A line only counts toward <code>complete</code>/<code>solved</code> once every box in it is filled — typing just
+        the small word's first letter updates the live <code>answer</code> preview but doesn't mark the puzzle solvable
+        until the whole long word is filled in.
       </p>
 
       <h3>Usage</h3>

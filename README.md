@@ -4,6 +4,8 @@ A small puzzle-component library built on [Ark UI](https://ark-ui.com/) primitiv
 by hand-written [Zag](https://zagjs.com/) state machines (the same engine Ark UI's own components are built
 on).
 
+Source: [GitHub](https://github.com/willklein/puzzleui) · [Tangled](https://tangled.org/willkle.in/puzzleui)
+
 ```
 pnpm install
 pnpm dev      # examples + docs app
@@ -17,7 +19,7 @@ docs (anatomy, props tables, usage snippet) rendered underneath, the same conten
 
 ### `Cryptex` — src/lib/cryptex
 
-Models the rotating letter-lock from *The Da Vinci Code*: a fixed word length, and for each position a set
+Models the rotating letter-lock from _The Da Vinci Code_: a fixed word length, and for each position a set
 of candidate letters the player can dial in. Give it a `solution` and it reports when the dialed word
 matches.
 
@@ -44,34 +46,34 @@ const letters = [
 
 **Anatomy**
 
-| Part | Description |
-| --- | --- |
-| `Cryptex.Root` | Owns the puzzle state and provides it to every child part. |
-| `Cryptex.Label` | An optional label for the puzzle. |
-| `Cryptex.Wheel` | One reel for a single word position: a focusable button showing the current letter, with the neighboring candidates visible above/below and step buttons for mouse users. |
-| `Cryptex.ValueText` | Displays the currently dialed word (defaults to the guess, padded with `_`). |
-| `Cryptex.SolvedIndicator` | Renders its children once `solved` is true, otherwise renders `fallback`. |
+| Part                      | Description                                                                                                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Cryptex.Root`            | Owns the puzzle state and provides it to every child part.                                                                                                                |
+| `Cryptex.Label`           | An optional label for the puzzle.                                                                                                                                         |
+| `Cryptex.Wheel`           | One reel for a single word position: a focusable button showing the current letter, with the neighboring candidates visible above/below and step buttons for mouse users. |
+| `Cryptex.ValueText`       | Displays the currently dialed word (defaults to the guess, padded with `_`).                                                                                              |
+| `Cryptex.SolvedIndicator` | Renders its children once `solved` is true, otherwise renders `fallback`.                                                                                                 |
 
 **Keyboard interactions** — only one wheel is in the tab order at a time (roving tabindex); click a wheel,
 or tab into the puzzle, to focus the first one.
 
-| Keys | Behavior |
-| --- | --- |
+| Keys      | Behavior                                                                      |
+| --------- | ----------------------------------------------------------------------------- |
 | `↑` / `↓` | Dial the focused wheel to the candidate above/below it, wrapping at the ends. |
-| `←` / `→` | Move focus to the neighboring wheel, wrapping at the ends. |
+| `←` / `→` | Move focus to the neighboring wheel, wrapping at the ends.                    |
 
 **`Cryptex.Root` props**
 
-| Prop | Type | Default | Description |
-| --- | --- | --- | --- |
-| `letters` | `string[][]` | — | Candidate letters for each wheel, top-to-bottom. `letters[i]` are the options for position `i`; the word length is `letters.length`. |
-| `solution` | `string` | — | The correct combination. When provided, `solved` becomes computable. |
-| `value` | `string[]` | — | Controlled value: one letter per wheel. |
-| `defaultValue` | `string[]` | `[]` | Initial value when uncontrolled. Unset positions default to that wheel's first candidate. |
-| `disabled` | `boolean` | — | Disables interaction with every wheel. |
-| `onValueChange` | `(details: { value: string[]; valueAsString: string }) => void` | — | Called whenever any wheel's value changes. |
-| `onSolvedChange` | `(solved: boolean) => void` | — | Called whenever `solved` changes. |
-| `id` | `string` | — | Base id used to derive part ids. |
+| Prop             | Type                                                            | Default | Description                                                                                                                          |
+| ---------------- | --------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `letters`        | `string[][]`                                                    | —       | Candidate letters for each wheel, top-to-bottom. `letters[i]` are the options for position `i`; the word length is `letters.length`. |
+| `solution`       | `string`                                                        | —       | The correct combination. When provided, `solved` becomes computable.                                                                 |
+| `value`          | `string[]`                                                      | —       | Controlled value: one letter per wheel.                                                                                              |
+| `defaultValue`   | `string[]`                                                      | `[]`    | Initial value when uncontrolled. Unset positions default to that wheel's first candidate.                                            |
+| `disabled`       | `boolean`                                                       | —       | Disables interaction with every wheel.                                                                                               |
+| `onValueChange`  | `(details: { value: string[]; valueAsString: string }) => void` | —       | Called whenever any wheel's value changes.                                                                                           |
+| `onSolvedChange` | `(solved: boolean) => void`                                     | —       | Called whenever `solved` changes.                                                                                                    |
+| `id`             | `string`                                                        | —       | Base id used to derive part ids.                                                                                                     |
 
 **`Cryptex.Wheel` props**: `index: number` (0-indexed position), `letters: string[]` (this wheel's candidates).
 
@@ -111,37 +113,43 @@ instead (overriding Root's array entry at that index if both are given), so `lin
 
 ```tsx
 <Acrostic.Root solution="PU" onSolvedChange={console.log}>
-  <Acrostic.Line index={0} line={{ clue: 'Unlocked, unsealed, or begun', longWordLength: 6, smallWordStart: 1, smallWordEnd: 3 }} />
-  <Acrostic.Line index={1} line={{ clue: 'Dwellings where families live', longWordLength: 6, smallWordStart: 2, smallWordEnd: 4 }} />
+  <Acrostic.Line
+    index={0}
+    line={{ clue: 'Unlocked, unsealed, or begun', longWordLength: 6, smallWordStart: 1, smallWordEnd: 3 }}
+  />
+  <Acrostic.Line
+    index={1}
+    line={{ clue: 'Dwellings where families live', longWordLength: 6, smallWordStart: 2, smallWordEnd: 4 }}
+  />
   <Acrostic.Answer />
 </Acrostic.Root>
 ```
 
 **Anatomy**
 
-| Part | Description |
-| --- | --- |
-| `Acrostic.Root` | Owns the puzzle state and provides it to every child part. |
-| `Acrostic.Line` | One clue + box row for `index`. Composes `Acrostic.Clue` and `Acrostic.Word` internally. Can own its layout via its own `line` prop instead of Root's `lines` array. |
-| `Acrostic.Clue` | The clue text for `index` (defaults to `lines[index].clue`). |
-| `Acrostic.Word` | The row of blank input boxes for `index`'s long word, sized to `lines[index].longWordLength`. |
-| `Acrostic.Box` | One directly-typeable, single-letter input box within a line's guess. Typing a letter auto-advances focus to the next box, including into the next line. |
-| `Acrostic.Answer` | Displays the assembled final answer (lines with no first letter yet render as `_`). |
-| `Acrostic.SolvedIndicator` | Renders its children once `solved` is true, otherwise renders `fallback`. |
+| Part                       | Description                                                                                                                                                          |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Acrostic.Root`            | Owns the puzzle state and provides it to every child part.                                                                                                           |
+| `Acrostic.Line`            | One clue + box row for `index`. Composes `Acrostic.Clue` and `Acrostic.Word` internally. Can own its layout via its own `line` prop instead of Root's `lines` array. |
+| `Acrostic.Clue`            | The clue text for `index` (defaults to `lines[index].clue`).                                                                                                         |
+| `Acrostic.Word`            | The row of blank input boxes for `index`'s long word, sized to `lines[index].longWordLength`.                                                                        |
+| `Acrostic.Box`             | One directly-typeable, single-letter input box within a line's guess. Typing a letter auto-advances focus to the next box, including into the next line.             |
+| `Acrostic.Answer`          | Displays the assembled final answer (lines with no first letter yet render as `_`).                                                                                  |
+| `Acrostic.SolvedIndicator` | Renders its children once `solved` is true, otherwise renders `fallback`.                                                                                            |
 
 **`Acrostic.Root` props**
 
-| Prop | Type | Default | Description |
-| --- | --- | --- | --- |
-| `lines` | `{ clue: string; longWordLength: number; smallWordStart: number; smallWordEnd: number }[]` | — | Optional if every `Acrostic.Line` supplies its own `line` prop instead. `longWordLength` sets the box count; `smallWordStart`/`smallWordEnd` (0-indexed, inclusive) mark the small word — its first letter contributes to the answer. |
-| `solution` | `string` | — | The final answer, spelled by the first letter of each line's small word. |
-| `lettersInNextWord` | `boolean` | — | When true, every letter of a line's small word must also appear among the next line's typed letters (multiset containment) before the puzzle counts as complete. No effect on the last line. Once both sides are fully typed, the small word's boxes (and the line itself) pick up `data-chain-valid`/`data-chain-invalid` for styling. |
-| `guesses` | `string[][]` | — | Controlled per-line, per-box guessed letters. |
-| `defaultGuesses` | `string[][]` | `[]` | Initial per-line guesses when uncontrolled. |
-| `disabled` | `boolean` | — | Disables typing into every box. |
-| `onAnswerChange` | `(details: { answer: string; guesses: string[][] }) => void` | — | Called whenever any box changes. |
-| `onSolvedChange` | `(solved: boolean) => void` | — | Called whenever `solved` changes. |
-| `id` | `string` | — | Base id used to derive part ids. |
+| Prop                | Type                                                                                       | Default | Description                                                                                                                                                                                                                                                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lines`             | `{ clue: string; longWordLength: number; smallWordStart: number; smallWordEnd: number }[]` | —       | Optional if every `Acrostic.Line` supplies its own `line` prop instead. `longWordLength` sets the box count; `smallWordStart`/`smallWordEnd` (0-indexed, inclusive) mark the small word — its first letter contributes to the answer.                                                                                                   |
+| `solution`          | `string`                                                                                   | —       | The final answer, spelled by the first letter of each line's small word.                                                                                                                                                                                                                                                                |
+| `lettersInNextWord` | `boolean`                                                                                  | —       | When true, every letter of a line's small word must also appear among the next line's typed letters (multiset containment) before the puzzle counts as complete. No effect on the last line. Once both sides are fully typed, the small word's boxes (and the line itself) pick up `data-chain-valid`/`data-chain-invalid` for styling. |
+| `guesses`           | `string[][]`                                                                               | —       | Controlled per-line, per-box guessed letters.                                                                                                                                                                                                                                                                                           |
+| `defaultGuesses`    | `string[][]`                                                                               | `[]`    | Initial per-line guesses when uncontrolled.                                                                                                                                                                                                                                                                                             |
+| `disabled`          | `boolean`                                                                                  | —       | Disables typing into every box.                                                                                                                                                                                                                                                                                                         |
+| `onAnswerChange`    | `(details: { answer: string; guesses: string[][] }) => void`                               | —       | Called whenever any box changes.                                                                                                                                                                                                                                                                                                        |
+| `onSolvedChange`    | `(solved: boolean) => void`                                                                | —       | Called whenever `solved` changes.                                                                                                                                                                                                                                                                                                       |
+| `id`                | `string`                                                                                   | —       | Base id used to derive part ids.                                                                                                                                                                                                                                                                                                        |
 
 **`Acrostic.Line` / `Acrostic.Clue` / `Acrostic.Word` props**: `index: number` (0-indexed line, required on
 all three). `Acrostic.Line` also takes an optional `line: { clue, longWordLength, smallWordStart, smallWordEnd }`.

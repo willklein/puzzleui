@@ -23,7 +23,9 @@ const DEFAULT_SOLUTION = 'GARDEN'
 /** Transposes line-major editor rows into the column-major `letters` shape the Cryptex component expects. */
 function linesToLetters(lines: string[][], length: number): string[][] {
   return Array.from({ length }, (_, col) => {
-    const candidates = lines.map((line) => line[col]?.trim().toUpperCase()).filter((letter): letter is string => !!letter)
+    const candidates = lines
+      .map((line) => line[col]?.trim().toUpperCase())
+      .filter((letter): letter is string => !!letter)
     return candidates.length > 0 ? candidates : ['?']
   })
 }
@@ -95,9 +97,9 @@ export function CryptexExample() {
     <div className="example">
       <div className="example-toolbar">
         <p className="example-intro">
-          Dial in each wheel to line up a word. Click a wheel or tab into the puzzle, then use <kbd>↑</kbd>/
-          <kbd>↓</kbd> to swap in the letter above or below, and <kbd>←</kbd>/<kbd>→</kbd> to move between
-          wheels. Save a combination to add it to the list below.
+          Dial in each wheel to line up a word. Click a wheel or tab into the puzzle, then use <kbd>↑</kbd>/<kbd>↓</kbd>{' '}
+          to swap in the letter above or below, and <kbd>←</kbd>/<kbd>→</kbd> to move between wheels. Save a combination
+          to add it to the list below.
         </p>
         <Dialog.Root open={editorOpen} onOpenChange={handleOpenChange}>
           <Dialog.Trigger className="edit-button">Edit</Dialog.Trigger>
@@ -107,8 +109,8 @@ export function CryptexExample() {
               <Dialog.Content className="dialog-content">
                 <Dialog.Title className="dialog-title">Edit puzzle</Dialog.Title>
                 <Dialog.Description className="dialog-description">
-                  Set the word length, then fill in each row with one letter per position. Every row becomes a
-                  candidate option for its column.
+                  Set the word length, then fill in each row with one letter per position. Every row becomes a candidate
+                  option for its column.
                 </Dialog.Description>
 
                 <label className="field">
@@ -134,8 +136,8 @@ export function CryptexExample() {
                   />
                 </label>
                 <p className="field-hint">
-                  Leave blank if the puzzle shouldn't have a single correct answer — it'll still show the
-                  dialed word, just never report as solved.
+                  Leave blank if the puzzle shouldn't have a single correct answer — it'll still show the dialed word,
+                  just never report as solved.
                 </p>
 
                 <div className="editor-lines">
