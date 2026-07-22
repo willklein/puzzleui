@@ -18,6 +18,16 @@ export function App() {
           </a>
           .
         </p>
+        <p className="app-links">
+          Source:{' '}
+          <a href="https://github.com/willklein/puzzleui" target="_blank" rel="noreferrer">
+            GitHub
+          </a>{' '}
+          ·{' '}
+          <a href="https://tangled.org/willkle.in/puzzleui" target="_blank" rel="noreferrer">
+            Tangled
+          </a>
+        </p>
       </header>
 
       <Tabs.Root defaultValue="cryptex" className="tabs">
