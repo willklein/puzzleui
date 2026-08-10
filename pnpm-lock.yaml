@@ -54,6 +54,9 @@ importers:
       storybook:
         specifier: ^10.5.2
         version: 10.5.2(@types/react@18.3.31)(prettier@3.9.6)(react@18.3.1)
+      storybook-addon-playscape:
+        specifier: ^1.0.2
+        version: 1.0.2(storybook@10.5.2(@types/react@18.3.31)(prettier@3.9.6)(react@18.3.1))
       typescript:
         specifier: ^5.6.3
         version: 5.9.3
@@ -146,6 +149,10 @@ packages:
   '@babel/runtime@7.29.7':
     resolution: {integrity: sha512-Nq8OhGWiZIZGV6hLHoyAKLLcJihP/xFeBMGJoUrxTX2psI8dCifzLhZISFb+VWS3wFMRDmCGw5R+dOySCqPLhw==}
     engines: {node: '>=6.9.0'}
+
+  '@babel/standalone@8.0.4':
+    resolution: {integrity: sha512-z8WgyJCfEl7qGAfJJksICOL5zQPpfwa6Yew+91Txf1k3xuDtlDdDe5GX2QdIhgx0HD7oYOCLoF8Y6CwNdawJwQ==}
+    engines: {node: ^22.18.0 || >=24.11.0}
 
   '@babel/template@7.29.7':
     resolution: {integrity: sha512-puq+Gf35oI24FeN11LkoUQFqv9uwNeWpxXZi/Ji3rRIoKAzKnxRaZ+Gkj0vKS9ZCiTESfng1N9LyOyXvo+m+Gg==}
@@ -1546,6 +1553,11 @@ packages:
     resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
     engines: {node: '>=0.10.0'}
 
+  storybook-addon-playscape@1.0.2:
+    resolution: {integrity: sha512-fq1lETgz3Yhh8mLEjw3HqhiaUT11+qsQbgUVQVfXl81d5oN6WFazHmYys05QsgKEYxEqAVGwvXBuWR/8/gl3xw==}
+    peerDependencies:
+      storybook: '*'
+
   storybook@10.5.2:
     resolution: {integrity: sha512-zkYxVZoDMj8njzZc3EH5UyY7885wpi9a1mmWVwFiNHSo+i5r2Go84E2OI1cdOctRymLkNvgs1j5jqAKA0ftBqg==}
     hasBin: true
@@ -1837,6 +1849,8 @@ snapshots:
       '@babel/helper-plugin-utils': 7.29.7
 
   '@babel/runtime@7.29.7': {}
+
+  '@babel/standalone@8.0.4': {}
 
   '@babel/template@7.29.7':
     dependencies:
@@ -3355,6 +3369,11 @@ snapshots:
   source-map-js@1.2.1: {}
 
   source-map@0.6.1: {}
+
+  storybook-addon-playscape@1.0.2(storybook@10.5.2(@types/react@18.3.31)(prettier@3.9.6)(react@18.3.1)):
+    dependencies:
+      '@babel/standalone': 8.0.4
+      storybook: 10.5.2(@types/react@18.3.31)(prettier@3.9.6)(react@18.3.1)
 
   storybook@10.5.2(@types/react@18.3.31)(prettier@3.9.6)(react@18.3.1):
     dependencies:
