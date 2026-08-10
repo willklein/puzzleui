@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { Acrostic, type AcrosticLineData } from '../../src/lib/acrostic'
+import { Acrostic, type AcrosticLineData, type AcrosticProps } from '../../src/lib/acrostic'
 
 const LINES: AcrosticLineData[] = [
   { clue: 'Unlocked, unsealed, or begun', longWordLength: 6, smallWordStart: 1, smallWordEnd: 3 },
@@ -12,13 +12,29 @@ const LINES: AcrosticLineData[] = [
 const SOLUTION = 'PUZZLE'
 const SOLVED_WORDS = ['OPENED', 'HOUSES', 'AMAZED', 'ZIGZAG', 'PILOTS', 'CHEATS']
 
-interface AcrosticDemoProps {
-  defaultGuesses?: string[][]
-}
+type AcrosticDemoProps = Pick<
+  AcrosticProps,
+  'defaultGuesses' | 'disabled' | 'lettersInNextWord' | 'onAnswerChange' | 'onSolvedChange'
+>
 
-function AcrosticDemo({ defaultGuesses }: AcrosticDemoProps) {
+function AcrosticDemo({
+  defaultGuesses,
+  disabled,
+  lettersInNextWord,
+  onAnswerChange,
+  onSolvedChange,
+}: AcrosticDemoProps) {
   return (
-    <Acrostic.Root className="acrostic" lines={LINES} solution={SOLUTION} defaultGuesses={defaultGuesses}>
+    <Acrostic.Root
+      className="acrostic"
+      lines={LINES}
+      solution={SOLUTION}
+      defaultGuesses={defaultGuesses}
+      disabled={disabled}
+      lettersInNextWord={lettersInNextWord}
+      onAnswerChange={onAnswerChange}
+      onSolvedChange={onSolvedChange}
+    >
       {LINES.map((_, index) => (
         <Acrostic.Line key={index} index={index} className="acrostic-line" />
       ))}
@@ -40,6 +56,33 @@ const meta: Meta<typeof AcrosticDemo> = {
   component: AcrosticDemo,
   parameters: {
     layout: 'centered',
+  },
+  args: {
+    disabled: false,
+    lettersInNextWord: false,
+  },
+  argTypes: {
+    defaultGuesses: {
+      control: 'object',
+      description: 'Initial per-line, per-box guessed letters, uncontrolled.',
+    },
+    disabled: {
+      control: 'boolean',
+      description: 'Disables interaction with every box.',
+    },
+    lettersInNextWord: {
+      control: 'boolean',
+      description:
+        "When true, a line's small word must have all its letters appear in the next line's typed letters for the puzzle to be considered complete.",
+    },
+    onAnswerChange: {
+      table: { category: 'Events' },
+      description: 'Fires whenever the assembled answer changes.',
+    },
+    onSolvedChange: {
+      table: { category: 'Events' },
+      description: 'Fires when the answer starts or stops matching `solution`.',
+    },
   },
 }
 
@@ -67,6 +110,9 @@ const CHAIN_WORDS = ['TRAIN', 'STAIRS', 'MOUNTAIN']
 
 /** With `lettersInNextWord` on, once both sides are fully typed a line's small word turns green if its letters carry into the next line's word, red if they don't. */
 export const LettersInNextWord: Story = {
+  parameters: {
+    controls: { disable: true },
+  },
   render: () => (
     <Acrostic.Root
       className="acrostic"
