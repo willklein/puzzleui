@@ -1,6 +1,6 @@
 {
   "name": "@willklein/puzzleui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -22,16 +22,22 @@
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.2.1",
+    "@storybook/addon-a11y": "10.5.2",
     "@storybook/addon-docs": "^10.5.2",
+    "@storybook/addon-vitest": "10.5.2",
     "@storybook/react-vite": "^10.5.2",
     "@types/node": "^26.1.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.3",
+    "@vitejs/plugin-react": "^4.7.0",
+    "@vitest/browser": "4.1.10",
+    "@vitest/browser-playwright": "4.1.10",
+    "playwright": "1.62.1",
     "prettier": "^3.9.6",
     "storybook": "^10.5.2",
-    "storybook-addon-playscape": "^1.0.2",
+    "storybook-addon-playscape": "^1.0.4",
     "typescript": "^5.6.3",
-    "vite": "^5.4.10"
+    "vite": "^6.4.3",
+    "vitest": "4.1.10"
   }
 }
