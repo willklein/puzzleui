@@ -104,7 +104,7 @@ export function SudokuDocs() {
           {
             name: 'Click / tap',
             description:
-              'Focuses the cell; if it has exactly one remaining candidate (`autoSolveOnClick`, on by default), commits that digit immediately.',
+              'Focuses the cell; if its notes (established via `autoNote()`) have narrowed to exactly one remaining, un-eliminated candidate (`autoSolveOnClick`, on by default), commits that digit immediately. Deliberately requires the player to have actually noted the cell — a forced cell the assist could solve from live constraint math alone, but that was never noted, does not auto-solve.',
           },
         ]}
       />

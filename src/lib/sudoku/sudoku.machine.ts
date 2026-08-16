@@ -227,8 +227,23 @@ function getRemainingCandidates(
   })
 }
 
-function getSingleCandidate(remainingCandidates: number[][]): Array<number | null> {
-  return remainingCandidates.map((candidates) => (candidates.length === 1 ? candidates[0] : null))
+/**
+ * A cell is only auto-solvable once the player has explicitly seen its candidates via
+ * `autoNote()` (`notesInitialized[cell]`) and, since then, elimination/note-toggling has
+ * narrowed what's left to exactly one live candidate that's still present in `notes[cell]`.
+ * This deliberately excludes cells the assist could solve purely from constraint math but
+ * the player never actually noted — see requirement discussion in sudoku.types.ts.
+ */
+function getSingleCandidate(
+  remainingCandidates: number[][],
+  notes: number[][],
+  notesInitialized: boolean[],
+): Array<number | null> {
+  return remainingCandidates.map((candidates, cell) => {
+    if (candidates.length !== 1) return null
+    if (!notesInitialized[cell]) return null
+    return notes[cell].includes(candidates[0]) ? candidates[0] : null
+  })
 }
 
 function getConflicts(values: Array<number | null>, layout: ResolvedSudokuLayout): boolean[] {
@@ -263,6 +278,7 @@ function snapshot({ context }: Pick<CommitParams, 'context'>): SudokuHistorySnap
     values: context.get('values'),
     notes: context.get('notes'),
     highlights: context.get('highlights'),
+    notesInitialized: context.get('notesInitialized'),
     noteMode: context.get('noteMode'),
     highlightMode: context.get('highlightMode'),
   }
@@ -292,6 +308,7 @@ function commitValue(
   const nextValues = withCell(values, index, digit)
   let nextNotes = withCell(context.get('notes'), index, [])
   let nextHighlights = withCell(context.get('highlights'), index, {})
+  const nextNotesInitialized = withCell(context.get('notesInitialized'), index, false)
 
   if (digit != null) {
     const peers = peerCellsOf(index, computed('layout'))
@@ -303,7 +320,10 @@ function commitValue(
     })
   }
 
-  commit({ context, refs, prop }, { values: nextValues, notes: nextNotes, highlights: nextHighlights })
+  commit(
+    { context, refs, prop },
+    { values: nextValues, notes: nextNotes, highlights: nextHighlights, notesInitialized: nextNotesInitialized },
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -383,6 +403,9 @@ export const machine = createMachine<SudokuSchema>({
           prop('onHighlightModeChange')?.(highlightMode)
         },
       })),
+      notesInitialized: bindable<boolean[]>(() => ({
+        defaultValue: Array.from({ length: prop('layout').size ** 2 }, () => false),
+      })),
       focusedIndex: bindable<number>(() => ({
         defaultValue: 0,
       })),
@@ -407,7 +430,8 @@ export const machine = createMachine<SudokuSchema>({
         computed('eliminated'),
         computed('layout'),
       ),
-    singleCandidate: ({ computed }) => getSingleCandidate(computed('remainingCandidates')),
+    singleCandidate: ({ context, computed }) =>
+      getSingleCandidate(computed('remainingCandidates'), context.get('notes'), context.get('notesInitialized')),
     conflicts: ({ context, computed }) => getConflicts(context.get('values'), computed('layout')),
     complete: ({ context }) => context.get('values').every((value) => value != null),
     solved: ({ context, computed, prop }) => {
@@ -481,6 +505,9 @@ export const machine = createMachine<SudokuSchema>({
             const { [digit]: _removed, ...rest } = cellHighlights
             updates.highlights = withCell(highlights, index, rest)
           }
+          if (nextCellNotes.length === 0) {
+            updates.notesInitialized = withCell(context.get('notesInitialized'), index, false)
+          }
         }
 
         commit({ context, refs, prop }, updates)
@@ -523,7 +550,11 @@ export const machine = createMachine<SudokuSchema>({
         if (notes[index].length === 0 && Object.keys(highlights[index]).length === 0) return
         commit(
           { context, refs, prop },
-          { notes: withCell(notes, index, []), highlights: withCell(highlights, index, {}) },
+          {
+            notes: withCell(notes, index, []),
+            highlights: withCell(highlights, index, {}),
+            notesInitialized: withCell(context.get('notesInitialized'), index, false),
+          },
         )
       },
       autoSolveCell({ context, event, computed, refs, prop }) {
@@ -537,6 +568,7 @@ export const machine = createMachine<SudokuSchema>({
       autoNoteGrid({ context, computed, refs, prop }) {
         const notes = context.get('notes')
         const highlights = context.get('highlights')
+        const notesInitialized = context.get('notesInitialized')
         const remaining = computed('remainingCandidates')
         const given = computed('given')
         const values = context.get('values')
@@ -546,8 +578,9 @@ export const machine = createMachine<SudokuSchema>({
           const highlighted = Object.keys(highlights[i]).map(Number)
           return Array.from(new Set([...highlighted, ...remaining[i]])).sort((a, b) => a - b)
         })
+        const nextNotesInitialized = notesInitialized.map((flag, i) => (given[i] || values[i] != null ? flag : true))
 
-        commit({ context, refs, prop }, { notes: nextNotes })
+        commit({ context, refs, prop }, { notes: nextNotes, notesInitialized: nextNotesInitialized })
       },
       clearAllNotesGrid({ context, refs, prop }) {
         commit(
@@ -555,6 +588,7 @@ export const machine = createMachine<SudokuSchema>({
           {
             notes: context.get('notes').map(() => [] as number[]),
             highlights: context.get('highlights').map(() => ({}) as Record<number, SudokuHighlightKind>),
+            notesInitialized: context.get('notesInitialized').map(() => false),
           },
         )
       },
@@ -574,6 +608,7 @@ export const machine = createMachine<SudokuSchema>({
         context.set('values', previous.values)
         context.set('notes', previous.notes)
         context.set('highlights', previous.highlights)
+        context.set('notesInitialized', previous.notesInitialized)
         context.set('noteMode', previous.noteMode)
         context.set('highlightMode', previous.highlightMode)
       },
@@ -587,6 +622,7 @@ export const machine = createMachine<SudokuSchema>({
         context.set('values', next.values)
         context.set('notes', next.notes)
         context.set('highlights', next.highlights)
+        context.set('notesInitialized', next.notesInitialized)
         context.set('noteMode', next.noteMode)
         context.set('highlightMode', next.highlightMode)
       },

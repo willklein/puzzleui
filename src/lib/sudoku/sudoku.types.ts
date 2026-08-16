@@ -32,11 +32,13 @@ export interface SudokuActivePair {
   cells: [number, number]
 }
 
-/** The 5 fields tracked by undo/redo history. `focusedIndex` is deliberately excluded so undo never moves the cursor. */
+/** The 6 fields tracked by undo/redo history. `focusedIndex` is deliberately excluded so undo never moves the cursor. */
 export interface SudokuHistorySnapshot {
   values: Array<number | null>
   notes: number[][]
   highlights: Array<Record<number, SudokuHighlightKind>>
+  /** Per cell, whether its notes were last (re)established via `autoNote()` — see `SudokuSchema.context.notesInitialized`. */
+  notesInitialized: boolean[]
   noteMode: boolean
   highlightMode: SudokuHighlightKind
 }
@@ -89,6 +91,14 @@ export interface SudokuSchema {
     values: Array<number | null>
     notes: number[][]
     highlights: Array<Record<number, SudokuHighlightKind>>
+    /**
+     * Per cell, whether its notes were last (re)established via `autoNote()` — the gate
+     * `singleCandidate` requires before treating a cell as auto-solvable, so the player must
+     * have explicitly seen (and, via elimination, narrowed) the candidates rather than the
+     * assist inferring a value purely from live constraint math. Reset to `false` for a cell
+     * whenever its notes are cleared (individually or grid-wide).
+     */
+    notesInitialized: boolean[]
     noteMode: boolean
     highlightMode: SudokuHighlightKind
     /** Roving-tabindex focused cell. */
@@ -108,7 +118,12 @@ export interface SudokuSchema {
     eliminated: number[][]
     /** Per empty, non-given cell: digits not yet placed in its row/col/box and not eliminated. */
     remainingCandidates: number[][]
-    /** `remainingCandidates[cell]` collapsed to its one digit, or `null`. */
+    /**
+     * `remainingCandidates[cell]` collapsed to its one digit, or `null` — but only once
+     * `notesInitialized[cell]` is true AND that digit is still present in `notes[cell]`.
+     * A cell with a forced single candidate that the player never noted (via `autoNote()`)
+     * reports `null` here, not the digit — auto-solve requires the player to have seen it.
+     */
     singleCandidate: Array<number | null>
     /** Cells currently violating row/col/box uniqueness. */
     conflicts: boolean[]
@@ -132,6 +147,8 @@ export interface SudokuApi<T extends PropTypes = PropTypes> {
   given: boolean[]
   notes: number[][]
   highlights: Array<Record<number, SudokuHighlightKind>>
+  /** Per cell, whether its notes were last (re)established via `autoNote()` — see `singleCandidate`. */
+  notesInitialized: boolean[]
   /** Currently-confirmed box/row/col pairs, derived from `highlights`. */
   activePairs: SudokuActivePair[]
   eliminated: number[][]

@@ -11,6 +11,7 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
   const given = computed('given')
   const notes = context.get('notes')
   const highlights = context.get('highlights')
+  const notesInitialized = context.get('notesInitialized')
   const activePairs = computed('activePairs')
   const eliminated = computed('eliminated')
   const remainingCandidates = computed('remainingCandidates')
@@ -32,6 +33,7 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
     given,
     notes,
     highlights,
+    notesInitialized,
     activePairs,
     eliminated,
     remainingCandidates,
