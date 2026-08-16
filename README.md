@@ -12,8 +12,9 @@ pnpm dev      # examples + docs app
 pnpm build    # typecheck + production build
 ```
 
-The dev app has two tabs, **Cryptex** and **Acrostic** — each a live playable example with its component's
-docs (anatomy, props tables, usage snippet) rendered underneath, the same content as below, kept in sync.
+The dev app has three tabs, **Cryptex**, **Acrostic**, and **Sudoku** — each a live playable example with its
+component's docs (anatomy, props tables, usage snippet) rendered underneath, the same content as below, kept
+in sync.
 
 ## Components
 
@@ -165,9 +166,97 @@ is filled in.
 The bundled example (`src/examples/acrostic-example.tsx`) spells **PUZZLE** from six lines, each with a
 2–4 letter small word embedded in a 6-letter long word.
 
+### `Sudoku` — src/lib/sudoku
+
+A configurable-size Sudoku grid — 9×9, 6×6, 4×4, or any box-shaped layout — with a full note-taking system:
+candidate notes per cell, a pair-highlight technique for marking when a digit has exactly two possible cells
+within a box, row, or column (which then automatically crosses that digit out everywhere else it's no longer
+possible), auto-note, auto-clear-on-commit, single-candidate auto-solve, and full undo/redo history.
+
+```tsx
+import { Sudoku, SUDOKU_9X9 } from './lib/sudoku'
+
+// null marks an empty, player-fillable cell. Flat-indexed row * size + col.
+const givens = [
+  5, 3, null, null, 7, null, null, null, null,
+  // ...9 rows of 9
+]
+
+<Sudoku.Root layout={SUDOKU_9X9} givens={givens} onSolvedChange={console.log}>
+  <Sudoku.SolvedIndicator fallback={<span>Keep going…</span>}>Solved!</Sudoku.SolvedIndicator>
+</Sudoku.Root>
+```
+
+`Sudoku.Root` renders `Sudoku.Grid` internally — unlike Cryptex/Acrostic, the consumer never maps cells
+manually. A layout is just `{ size, boxWidth, boxHeight }` (with `boxWidth * boxHeight === size`); named
+presets `SUDOKU_9X9`/`SUDOKU_6X6`/`SUDOKU_4X4` are exported for convenience, but any box-shaped size works:
+
+```tsx
+import { Sudoku, SUDOKU_6X6 } from './lib/sudoku'
+
+// 6x6: boxes are 3 cols x 2 rows, laid out 2 boxes across x 3 down.
+;<Sudoku.Root layout={SUDOKU_6X6} givens={sixBySixGivens} />
+```
+
+**Anatomy**
+
+| Part                     | Description                                                                                                                 |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `Sudoku.Root`            | Owns the puzzle state and provides it to every child part. Renders `Sudoku.Grid` internally.                                |
+| `Sudoku.Grid`            | Renders every cell in the grid — the consumer never maps cells manually.                                                    |
+| `Sudoku.Cell`            | One cell, keyboard-navigable (roving tabindex). Shows its committed digit if filled, else composes `Sudoku.Note` per digit. |
+| `Sudoku.Note`            | One candidate-digit slot within a cell. Purely display — notes toggle via the cell's own keyboard handling.                 |
+| `Sudoku.SolvedIndicator` | Renders its children once `solved` is true, otherwise renders `fallback`.                                                   |
+
+**Keyboard interactions**
+
+| Keys                   | Behavior                                                                                                                     |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Arrow keys             | Move focus one cell, clamped at the grid edges (not wrapped).                                                                |
+| Digit key (`1`..size)  | Sets the cell's value when `noteMode` is off; toggles a plain candidate note when `noteMode` is on.                          |
+| `Shift` + digit key    | While `noteMode` is on, marks/re-tags the note as highlighted using the current `highlightMode` (`'box'`/`'row'`/`'col'`).   |
+| `Backspace` / `Delete` | On a valued cell, undoes the most recent action (bringing that cell's prior notes back). On an empty cell, clears its notes. |
+| Click / tap            | Focuses the cell; if it has exactly one remaining candidate (`autoSolveOnClick`, on by default), commits it immediately.     |
+
+**`Sudoku.Root` props**
+
+| Prop                                                               | Type                                                    | Default      | Description                                                                                                                    |
+| ------------------------------------------------------------------ | ------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `layout`                                                           | `{ size: number; boxWidth: number; boxHeight: number }` | `SUDOKU_9X9` | The grid shape. `boxWidth * boxHeight` must equal `size`.                                                                      |
+| `givens`                                                           | `Array<number \| null>`                                 | —            | The puzzle's fixed clues, flat-indexed `row * size + col`. `null` marks an empty cell. Required, length `size * size`.         |
+| `value` / `defaultValue` / `onValueChange`                         | `Array<number \| null>`                                 | —            | Controlled/uncontrolled per-cell committed digits (given + player-entered).                                                    |
+| `notes` / `defaultNotes` / `onNotesChange`                         | `number[][]`                                            | —            | Controlled/uncontrolled per-cell candidate notes.                                                                              |
+| `highlights` / `defaultHighlights` / `onHighlightsChange`          | `Array<Record<number, 'box' \| 'row' \| 'col'>>`        | —            | Controlled/uncontrolled per-cell note highlights.                                                                              |
+| `noteMode` / `defaultNoteMode` / `onNoteModeChange`                | `boolean`                                               | `false`      | Whether digit keys toggle notes instead of setting the value.                                                                  |
+| `highlightMode` / `defaultHighlightMode` / `onHighlightModeChange` | `'box' \| 'row' \| 'col'`                               | `'box'`      | Which kind newly-marked highlights get.                                                                                        |
+| `autoSolveOnClick`                                                 | `boolean`                                               | `true`       | Whether clicking a cell with exactly one remaining candidate immediately commits it.                                           |
+| `solution`                                                         | `Array<number \| null>`                                 | —            | An optional known-correct grid to validate against. Not required — `solved` otherwise self-verifies (complete + no conflicts). |
+| `maxHistoryLength`                                                 | `number`                                                | `200`        | Maximum undo/redo stack depth.                                                                                                 |
+| `disabled`                                                         | `boolean`                                               | —            | Disables interaction with every cell.                                                                                          |
+| `onSolvedChange`                                                   | `(solved: boolean) => void`                             | —            | Called whenever `solved` changes.                                                                                              |
+| `id`                                                               | `string`                                                | —            | Base id used to derive part ids.                                                                                               |
+
+**`Sudoku.Cell` props**: `index: number` (flat-indexed `row * size + col`).
+
+**`Sudoku.Note` props**: `index: number`, `digit: number`.
+
+**`Sudoku.SolvedIndicator` props**: `fallback?: ReactNode` (content shown while not solved).
+
+The pair-highlight mechanic is the core note-taking feature: marking a digit highlighted in exactly two cells
+of the same box/row/column asserts "this digit can only be in one of these two cells." The component
+propagates that — no other cell in that unit can hold it, and if those two cells also happen to share a
+_different_ kind of unit (a box-pair that's also in the same row, for example), the digit is crossed out
+there too. This mirrors two real solving techniques: pointing pairs (box → row/col) and box-line reduction
+(row/col → box). Everything derives live from `notes`/`highlights`, so toggling a highlight off immediately
+undoes its eliminations. There's also a separate, general undo/redo history covering every mutating action
+(`Sudoku.Root`'s API exposes `undo()`/`redo()`/`canUndo`/`canRedo`), not just note pairs.
+
+The bundled example (`src/examples/sudoku-example.tsx`) offers 9×9/6×6/4×4 preset puzzles with a toolbar for
+notes mode, highlight mode, auto-note, and undo/redo.
+
 ## Architecture
 
-Both components follow the same pattern [Ark UI](https://ark-ui.com/) itself uses internally for every
+All three components follow the same pattern [Ark UI](https://ark-ui.com/) itself uses internally for every
 component (verified against `@ark-ui/react`'s own source):
 
 - `*.types.ts` — the [Zag](https://zagjs.com/) `MachineSchema` (state/props/context/computed/events) plus

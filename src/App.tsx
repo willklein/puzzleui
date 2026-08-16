@@ -1,6 +1,7 @@
 import { Tabs } from '@ark-ui/react/tabs'
 import { CryptexExample } from './examples/cryptex-example'
 import { AcrosticExample } from './examples/acrostic-example'
+import { SudokuExample } from './examples/sudoku-example'
 
 export function App() {
   return (
@@ -38,6 +39,9 @@ export function App() {
           <Tabs.Trigger value="acrostic" className="tabs-trigger">
             Acrostic
           </Tabs.Trigger>
+          <Tabs.Trigger value="sudoku" className="tabs-trigger">
+            Sudoku
+          </Tabs.Trigger>
           <Tabs.Indicator className="tabs-indicator" />
         </Tabs.List>
 
@@ -46,6 +50,9 @@ export function App() {
         </Tabs.Content>
         <Tabs.Content value="acrostic" className="tabs-content">
           <AcrosticExample />
+        </Tabs.Content>
+        <Tabs.Content value="sudoku" className="tabs-content">
+          <SudokuExample />
         </Tabs.Content>
       </Tabs.Root>
     </div>
