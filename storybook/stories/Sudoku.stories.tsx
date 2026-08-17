@@ -89,6 +89,7 @@ type SudokuDemoProps = Pick<
 function SudokuDemo({ layout = SUDOKU_9X9, givens, ...rest }: SudokuDemoProps) {
   return (
     <Sudoku.Root className="sudoku" layout={layout} givens={givens ?? emptyGivens(layout)} {...rest}>
+      <Sudoku.Toolbar />
       <Sudoku.SolvedIndicator className="sudoku-solved" fallback={<span>Keep going…</span>}>
         Solved!
       </Sudoku.SolvedIndicator>
@@ -157,6 +158,7 @@ export const NoteMode: Story = {
         defaultHighlights={highlights}
         defaultNoteMode
       >
+        <Sudoku.Toolbar />
         <Sudoku.SolvedIndicator className="sudoku-solved" fallback={<span>Keep going…</span>}>
           Solved!
         </Sudoku.SolvedIndicator>
@@ -193,6 +195,7 @@ export const ActivePairHighlight: Story = {
         defaultHighlights={highlights}
         defaultNoteMode
       >
+        <Sudoku.Toolbar />
         <Sudoku.SolvedIndicator className="sudoku-solved" fallback={<span>Keep going…</span>}>
           Solved!
         </Sudoku.SolvedIndicator>

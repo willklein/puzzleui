@@ -6,6 +6,13 @@ export { SudokuGrid, type SudokuGridProps } from './sudoku-grid'
 export { SudokuCell, type SudokuCellProps } from './sudoku-cell'
 export { SudokuNote, type SudokuNoteProps } from './sudoku-note'
 export { SudokuSolvedIndicator, type SudokuSolvedIndicatorProps } from './sudoku-solved-indicator'
+export { SudokuToolbar, type SudokuToolbarProps } from './sudoku-toolbar'
+export { SudokuNoteModeToggle, type SudokuNoteModeToggleProps } from './sudoku-note-mode-toggle'
+export { SudokuHighlightModeToggle, type SudokuHighlightModeToggleProps } from './sudoku-highlight-mode-toggle'
+export { SudokuAutoNoteTrigger, type SudokuAutoNoteTriggerProps } from './sudoku-auto-note-trigger'
+export { SudokuClearNotesTrigger, type SudokuClearNotesTriggerProps } from './sudoku-clear-notes-trigger'
+export { SudokuUndoTrigger, type SudokuUndoTriggerProps } from './sudoku-undo-trigger'
+export { SudokuRedoTrigger, type SudokuRedoTriggerProps } from './sudoku-redo-trigger'
 export {
   type SudokuApi,
   type SudokuProps,
@@ -13,6 +20,7 @@ export {
   type ResolvedSudokuLayout,
   type SudokuHighlightKind,
   type SudokuActivePair,
+  type SudokuHiddenCell,
   type SudokuHistorySnapshot,
   type SudokuSchema,
   type SudokuService,

@@ -225,6 +225,71 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
       })
     },
 
+    getToolbarProps() {
+      return normalize.element({
+        'data-scope': 'sudoku',
+        'data-part': 'toolbar',
+      })
+    },
+
+    getNoteModeToggleProps() {
+      return normalize.button({
+        type: 'button',
+        'data-scope': 'sudoku',
+        'data-part': 'note-mode-toggle',
+        'data-active': dataAttr(noteMode),
+        'aria-pressed': noteMode,
+        disabled,
+        onClick() {
+          if (disabled) return
+          send({ type: 'NOTE_MODE.SET', enabled: !noteMode })
+        },
+      })
+    },
+
+    getHighlightModeToggleProps(mode) {
+      const active = highlightMode === mode
+      return normalize.button({
+        type: 'button',
+        'data-scope': 'sudoku',
+        'data-part': 'highlight-mode-toggle',
+        'data-mode': mode,
+        'data-active': dataAttr(active),
+        'aria-pressed': active,
+        disabled,
+        onClick() {
+          if (disabled) return
+          send({ type: 'HIGHLIGHT_MODE.SET', mode })
+        },
+      })
+    },
+
+    getAutoNoteTriggerProps() {
+      return normalize.button({
+        type: 'button',
+        'data-scope': 'sudoku',
+        'data-part': 'auto-note-trigger',
+        disabled,
+        onClick() {
+          if (disabled) return
+          send({ type: 'GRID.AUTO_NOTE' })
+        },
+      })
+    },
+
+    getClearNotesTriggerProps() {
+      return normalize.button({
+        type: 'button',
+        'data-scope': 'sudoku',
+        'data-part': 'clear-notes-trigger',
+        disabled,
+        onClick() {
+          if (disabled) return
+          send({ type: 'GRID.CLEAR_NOTES' })
+        },
+      })
+    },
+
     getUndoTriggerProps() {
       return normalize.button({
         type: 'button',

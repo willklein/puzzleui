@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Sudoku, SUDOKU_4X4, SUDOKU_6X6, SUDOKU_9X9, useSudokuContext, type SudokuLayout } from '../lib/sudoku'
+import { Sudoku, SUDOKU_4X4, SUDOKU_6X6, SUDOKU_9X9, type SudokuLayout } from '../lib/sudoku'
 import { SudokuDocs } from '../docs/sudoku-docs'
 
 interface SudokuPreset {
@@ -52,40 +52,6 @@ const PRESETS: SudokuPreset[] = [
   { value: '4x4', label: '4×4', layout: SUDOKU_4X4, givens: FOUR_BY_FOUR },
 ]
 
-/** Lives inside Sudoku.Root so it can read/drive the puzzle via context, same as any custom part would. */
-function SudokuToolbar() {
-  const sudoku = useSudokuContext()
-
-  return (
-    <div className="sudoku-toolbar">
-      <button type="button" data-active={sudoku.noteMode} onClick={sudoku.toggleNoteMode}>
-        Notes {sudoku.noteMode ? 'On' : 'Off'}
-      </button>
-      <button type="button" data-active={sudoku.highlightMode === 'box'} onClick={() => sudoku.setHighlightMode('box')}>
-        Box pairs
-      </button>
-      <button type="button" data-active={sudoku.highlightMode === 'row'} onClick={() => sudoku.setHighlightMode('row')}>
-        Row pairs
-      </button>
-      <button type="button" data-active={sudoku.highlightMode === 'col'} onClick={() => sudoku.setHighlightMode('col')}>
-        Column pairs
-      </button>
-      <button type="button" onClick={sudoku.autoNote}>
-        Auto-note
-      </button>
-      <button type="button" onClick={sudoku.clearAllNotes}>
-        Clear notes
-      </button>
-      <button type="button" {...sudoku.getUndoTriggerProps()}>
-        Undo
-      </button>
-      <button type="button" {...sudoku.getRedoTriggerProps()}>
-        Redo
-      </button>
-    </div>
-  )
-}
-
 export function SudokuExample() {
   const [presetValue, setPresetValue] = useState(PRESETS[0].value)
   const preset = PRESETS.find((p) => p.value === presetValue) ?? PRESETS[0]
@@ -113,7 +79,7 @@ export function SudokuExample() {
       </div>
 
       <Sudoku.Root key={preset.value} className="sudoku" layout={preset.layout} givens={preset.givens}>
-        <SudokuToolbar />
+        <Sudoku.Toolbar />
         <Sudoku.SolvedIndicator className="sudoku-solved" fallback={<span>Keep going…</span>}>
           Solved!
         </Sudoku.SolvedIndicator>

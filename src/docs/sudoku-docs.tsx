@@ -22,23 +22,21 @@ const USAGE_LAYOUT = `import { Sudoku, SUDOKU_6X6 } from './lib/sudoku'
 // Any box-shaped layout works, as long as boxWidth * boxHeight === size.
 <Sudoku.Root layout={{ size: 4, boxWidth: 2, boxHeight: 2 }} givens={fourByFourGivens} />`
 
-const USAGE_TOOLBAR = `// Notes-mode and highlight-mode are persistent toggles the app controls;
-// undo/redo are wired straight to the exported get*TriggerProps().
-function Toolbar() {
-  const sudoku = useSudokuContext()
-  return (
-    <div className="sudoku-toolbar">
-      <button data-active={sudoku.noteMode} onClick={sudoku.toggleNoteMode}>
-        Notes
-      </button>
-      <button onClick={() => sudoku.setHighlightMode('row')}>Row pairs</button>
-      <button onClick={() => sudoku.setHighlightMode('col')}>Column pairs</button>
-      <button {...sudoku.getUndoTriggerProps()}>Undo</button>
-      <button {...sudoku.getRedoTriggerProps()}>Redo</button>
-      <button onClick={sudoku.autoNote}>Auto-note</button>
-    </div>
-  )
-}`
+const USAGE_TOOLBAR = `// A ready-made control strip: notes-mode toggle, box/row/column highlight-mode
+// buttons, auto-note, clear-notes, and undo/redo.
+<Sudoku.Root layout={SUDOKU_9X9} givens={givens}>
+  <Sudoku.Toolbar />
+</Sudoku.Root>
+
+// Or compose the individual parts yourself for a custom layout/subset/labels —
+// each one is just a button wired to the matching Api method, with sensible
+// default text that any children you pass override.
+<Sudoku.Root layout={SUDOKU_9X9} givens={givens}>
+  <Sudoku.NoteModeToggle />
+  <Sudoku.HighlightModeToggle mode="row">Pairs in a row</Sudoku.HighlightModeToggle>
+  <Sudoku.UndoTrigger />
+  <Sudoku.RedoTrigger />
+</Sudoku.Root>`
 
 export function SudokuDocs() {
   return (
@@ -76,6 +74,20 @@ export function SudokuDocs() {
             name: 'Sudoku.SolvedIndicator',
             description: 'Renders its children once `solved` is true, otherwise renders `fallback`.',
           },
+          {
+            name: 'Sudoku.Toolbar',
+            description:
+              'A ready-made control strip composing every trigger/toggle below. Optional — nothing else in the tree depends on it.',
+          },
+          { name: 'Sudoku.NoteModeToggle', description: 'Toggles `noteMode` on click.' },
+          {
+            name: 'Sudoku.HighlightModeToggle',
+            description: 'Sets `highlightMode` to its `mode` prop on click — one instance per kind (box/row/col).',
+          },
+          { name: 'Sudoku.AutoNoteTrigger', description: 'Calls `autoNote()` on click.' },
+          { name: 'Sudoku.ClearNotesTrigger', description: 'Calls `clearAllNotes()` on click.' },
+          { name: 'Sudoku.UndoTrigger', description: 'Calls `undo()` on click. Disabled when `canUndo` is false.' },
+          { name: 'Sudoku.RedoTrigger', description: 'Calls `redo()` on click. Disabled when `canRedo` is false.' },
         ]}
       />
 
@@ -198,6 +210,19 @@ export function SudokuDocs() {
           { name: 'fallback', type: 'ReactNode', description: 'Content to render while the puzzle is not yet solved.' },
         ]}
       />
+
+      <h3>Sudoku.HighlightModeToggle props</h3>
+      <PropsTable
+        rows={[
+          { name: 'mode', type: "'box' | 'row' | 'col'", description: 'Which highlight kind this button selects.' },
+        ]}
+      />
+
+      <p className="docs-note">
+        <code>Sudoku.Toolbar</code> and its sub-parts (<code>NoteModeToggle</code>, <code>HighlightModeToggle</code>,{' '}
+        <code>AutoNoteTrigger</code>, <code>ClearNotesTrigger</code>, <code>UndoTrigger</code>, <code>RedoTrigger</code>
+        ) each render sensible default button text — pass <code>children</code> to any of them to override it.
+      </p>
 
       <p className="docs-note">
         The pair-highlight technique is the core note-taking mechanic: marking a digit as highlighted in exactly two

@@ -896,7 +896,7 @@ body {
   opacity: 0.6;
 }
 
-.sudoku-toolbar,
+[data-scope='sudoku'][data-part='toolbar'],
 .sudoku-preset-picker {
   display: flex;
   flex-wrap: wrap;
@@ -904,10 +904,13 @@ body {
   gap: 0.5rem;
 }
 
-.sudoku-toolbar button,
-.sudoku-preset-picker button,
+[data-scope='sudoku'][data-part='note-mode-toggle'],
+[data-scope='sudoku'][data-part='highlight-mode-toggle'],
+[data-scope='sudoku'][data-part='auto-note-trigger'],
+[data-scope='sudoku'][data-part='clear-notes-trigger'],
 [data-scope='sudoku'][data-part='undo-trigger'],
-[data-scope='sudoku'][data-part='redo-trigger'] {
+[data-scope='sudoku'][data-part='redo-trigger'],
+.sudoku-preset-picker button {
   appearance: none;
   padding: 0.4rem 0.75rem;
   border: 1px solid var(--border-strong);
@@ -918,13 +921,17 @@ body {
   cursor: pointer;
 }
 
-.sudoku-toolbar button[data-active='true'],
+[data-scope='sudoku'][data-part='note-mode-toggle'][data-active],
+[data-scope='sudoku'][data-part='highlight-mode-toggle'][data-active],
 .sudoku-preset-picker button[data-active='true'] {
   border-color: var(--accent);
   color: var(--accent);
 }
 
-.sudoku-toolbar button:disabled,
+[data-scope='sudoku'][data-part='note-mode-toggle']:disabled,
+[data-scope='sudoku'][data-part='highlight-mode-toggle']:disabled,
+[data-scope='sudoku'][data-part='auto-note-trigger']:disabled,
+[data-scope='sudoku'][data-part='clear-notes-trigger']:disabled,
 [data-scope='sudoku'][data-part='undo-trigger']:disabled,
 [data-scope='sudoku'][data-part='redo-trigger']:disabled {
   opacity: 0.4;

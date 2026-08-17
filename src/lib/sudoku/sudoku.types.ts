@@ -209,6 +209,11 @@ export interface SudokuApi<T extends PropTypes = PropTypes> {
   getCellProps: (index: number) => T['button']
   getNoteProps: (index: number, digit: number) => T['element']
   getSolvedIndicatorProps: () => T['element']
+  getToolbarProps: () => T['element']
+  getNoteModeToggleProps: () => T['button']
+  getHighlightModeToggleProps: (mode: SudokuHighlightKind) => T['button']
+  getAutoNoteTriggerProps: () => T['button']
+  getClearNotesTriggerProps: () => T['button']
   getUndoTriggerProps: () => T['button']
   getRedoTriggerProps: () => T['button']
 }

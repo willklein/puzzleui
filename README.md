@@ -200,13 +200,20 @@ import { Sudoku, SUDOKU_6X6 } from './lib/sudoku'
 
 **Anatomy**
 
-| Part                     | Description                                                                                                                 |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `Sudoku.Root`            | Owns the puzzle state and provides it to every child part. Renders `Sudoku.Grid` internally.                                |
-| `Sudoku.Grid`            | Renders every cell in the grid — the consumer never maps cells manually.                                                    |
-| `Sudoku.Cell`            | One cell, keyboard-navigable (roving tabindex). Shows its committed digit if filled, else composes `Sudoku.Note` per digit. |
-| `Sudoku.Note`            | One candidate-digit slot within a cell. Purely display — notes toggle via the cell's own keyboard handling.                 |
-| `Sudoku.SolvedIndicator` | Renders its children once `solved` is true, otherwise renders `fallback`.                                                   |
+| Part                         | Description                                                                                                                 |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `Sudoku.Root`                | Owns the puzzle state and provides it to every child part. Renders `Sudoku.Grid` internally.                                |
+| `Sudoku.Grid`                | Renders every cell in the grid — the consumer never maps cells manually.                                                    |
+| `Sudoku.Cell`                | One cell, keyboard-navigable (roving tabindex). Shows its committed digit if filled, else composes `Sudoku.Note` per digit. |
+| `Sudoku.Note`                | One candidate-digit slot within a cell. Purely display — notes toggle via the cell's own keyboard handling.                 |
+| `Sudoku.SolvedIndicator`     | Renders its children once `solved` is true, otherwise renders `fallback`.                                                   |
+| `Sudoku.Toolbar`             | A ready-made control strip composing every trigger/toggle below. Optional.                                                  |
+| `Sudoku.NoteModeToggle`      | Toggles `noteMode` on click.                                                                                                |
+| `Sudoku.HighlightModeToggle` | Sets `highlightMode` to its `mode` prop on click — one instance per kind (box/row/col).                                     |
+| `Sudoku.AutoNoteTrigger`     | Calls `autoNote()` on click.                                                                                                |
+| `Sudoku.ClearNotesTrigger`   | Calls `clearAllNotes()` on click.                                                                                           |
+| `Sudoku.UndoTrigger`         | Calls `undo()` on click. Disabled when `canUndo` is false.                                                                  |
+| `Sudoku.RedoTrigger`         | Calls `redo()` on click. Disabled when `canRedo` is false.                                                                  |
 
 **Keyboard interactions**
 
@@ -241,6 +248,25 @@ import { Sudoku, SUDOKU_6X6 } from './lib/sudoku'
 **`Sudoku.Note` props**: `index: number`, `digit: number`.
 
 **`Sudoku.SolvedIndicator` props**: `fallback?: ReactNode` (content shown while not solved).
+
+**`Sudoku.HighlightModeToggle` props**: `mode: 'box' | 'row' | 'col'` (which kind this button selects).
+
+`Sudoku.Toolbar` and its sub-parts each render sensible default button text — pass `children` to any of them
+to override it:
+
+```tsx
+<Sudoku.Root layout={SUDOKU_9X9} givens={givens}>
+  <Sudoku.Toolbar />
+</Sudoku.Root>
+
+// Or compose the individual parts yourself for a custom layout/subset/labels:
+<Sudoku.Root layout={SUDOKU_9X9} givens={givens}>
+  <Sudoku.NoteModeToggle />
+  <Sudoku.HighlightModeToggle mode="row">Pairs in a row</Sudoku.HighlightModeToggle>
+  <Sudoku.UndoTrigger />
+  <Sudoku.RedoTrigger />
+</Sudoku.Root>
+```
 
 The pair-highlight mechanic is the core note-taking feature: marking a digit highlighted in exactly two cells
 of the same box/row/column asserts "this digit can only be in one of these two cells." The component
