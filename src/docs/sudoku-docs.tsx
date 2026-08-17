@@ -106,7 +106,7 @@ export function SudokuDocs() {
           {
             name: 'Shift + digit key',
             description:
-              "While `noteMode` is on, marks/re-tags the note as highlighted using the current `highlightMode` ('box', 'row', or 'col').",
+              "Toggles a plain candidate note, even while `noteMode` is off — a shortcut for jotting one note without leaving value-entry mode. While `noteMode` IS on, Shift instead marks/re-tags the note as highlighted using the current `highlightMode` ('box', 'row', or 'col'), since a plain digit there already toggles a note.",
           },
           {
             name: 'Backspace / Delete',

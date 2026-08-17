@@ -3,6 +3,30 @@ import type { NormalizeProps } from '@zag-js/types'
 import type { SudokuApi, SudokuHighlightKind, SudokuService } from './sudoku.types'
 import { dataAttr } from '../shared/dom'
 
+const DIGIT_CODE = /^(?:Digit|Numpad)([0-9])$/
+
+/**
+ * Reads the pressed digit from `event.code` (the physical key) first, falling back to
+ * `event.key` (the character produced) if `code` isn't populated.
+ *
+ * `key` changes with modifiers and layout — Shift+1 on a US keyboard produces `"!"`, and on
+ * some layouts (e.g. French AZERTY) even a bare digit press requires Shift to produce `"1"`
+ * at all — so parsing `key` alone as a number silently drops those presses. `code` always
+ * reports "Digit1"/"Numpad1"/etc. for that physical key regardless of Shift or layout, so it's
+ * tried first. But `code` itself isn't universally reliable — it's commonly empty/unset for
+ * programmatically dispatched events (test automation) and on some mobile/IME virtual
+ * keyboards — so `key` remains as a fallback rather than the only source.
+ */
+function digitFromKey(event: { code: string; key: string }, maxDigit: number): number | null {
+  const codeMatch = DIGIT_CODE.exec(event.code)
+  if (codeMatch) {
+    const digit = Number(codeMatch[1])
+    if (digit >= 1 && digit <= maxDigit) return digit
+  }
+  const keyDigit = Number(event.key)
+  return Number.isInteger(keyDigit) && keyDigit >= 1 && keyDigit <= maxDigit ? keyDigit : null
+}
+
 export function connect<T extends PropTypes>(service: SudokuService, normalize: NormalizeProps<T>): SudokuApi<T> {
   const { context, prop, computed, send } = service
 
@@ -186,13 +210,18 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
             return
           }
 
-          const digit = Number(event.key)
-          if (!Number.isInteger(digit) || digit < 1 || digit > layout.size) return
+          const digit = digitFromKey(event, layout.size)
+          if (digit == null) return
           event.preventDefault()
           event.stopPropagation()
 
+          // Shift+digit always toggles a plain note, even outside Notes mode — a shortcut for
+          // jotting one note without switching modes. Once already in Notes mode, Shift instead
+          // marks that note highlighted (per the active highlight mode), same as a plain digit
+          // there already toggles a note.
           if (!noteMode) {
-            send({ type: 'CELL.SET_VALUE', index, digit })
+            if (event.shiftKey) send({ type: 'CELL.TOGGLE_NOTE', index, digit })
+            else send({ type: 'CELL.SET_VALUE', index, digit })
           } else if (event.shiftKey) {
             send({ type: 'CELL.TOGGLE_NOTE_HIGHLIGHT', index, digit })
           } else {
