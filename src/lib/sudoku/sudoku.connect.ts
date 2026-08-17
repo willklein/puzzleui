@@ -45,6 +45,7 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
   const solved = computed('solved')
   const disabled = !!prop('disabled')
   const focusedIndex = context.get('focusedIndex')
+  const selectedIndices = context.get('selectedIndices')
   const noteMode = context.get('noteMode')
   const highlightMode = context.get('highlightMode')
   const canUndo = computed('canUndo')
@@ -67,6 +68,7 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
     solved,
     disabled,
     focusedIndex,
+    selectedIndices,
     noteMode,
     highlightMode,
     canUndo,
@@ -108,6 +110,12 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
     moveFocus(rowDelta, colDelta) {
       send({ type: 'CELL.MOVE_FOCUS', rowDelta, colDelta })
     },
+    selectCell(index) {
+      send({ type: 'CELL.SELECT', index })
+    },
+    toggleSelected(index) {
+      send({ type: 'CELL.TOGGLE_SELECTED', index })
+    },
     undo() {
       send({ type: 'HISTORY.UNDO' })
     },
@@ -138,6 +146,7 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
       const value = values[index]
       const isGiven = given[index]
       const focused = index === focusedIndex
+      const selected = selectedIndices.length > 1 && selectedIndices.includes(index)
 
       return normalize.button({
         type: 'button',
@@ -150,6 +159,7 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
         'data-given': dataAttr(isGiven),
         'data-value': value ?? undefined,
         'data-focused': dataAttr(focused),
+        'data-selected': dataAttr(selected),
         'data-conflict': dataAttr(conflicts[index]),
         'data-box-border-right': dataAttr((col + 1) % layout.boxWidth === 0 && col !== layout.size - 1),
         'data-box-border-bottom': dataAttr((row + 1) % layout.boxHeight === 0 && row !== layout.size - 1),
@@ -164,9 +174,17 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
           if (disabled) return
           send({ type: 'CELL.FOCUS', index })
         },
-        onClick() {
+        onClick(event) {
           if (disabled) return
-          send({ type: 'CELL.FOCUS', index })
+          // Cmd (Mac) / Ctrl (other platforms) + click toggles this cell into/out of a
+          // multi-selection instead of replacing it — see `toggleSelected`/`resolveTargets`.
+          // Never triggers auto-solve: that's a single-cell "commit this" action, not a
+          // selection gesture.
+          if (event.metaKey || event.ctrlKey) {
+            send({ type: 'CELL.TOGGLE_SELECTED', index })
+            return
+          }
+          send({ type: 'CELL.SELECT', index })
           if (autoSolveOnClick && !isGiven && value == null && singleCandidate[index] != null) {
             send({ type: 'CELL.AUTO_SOLVE', index })
           }
@@ -205,8 +223,19 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
           if (event.key === 'Backspace' || event.key === 'Delete') {
             event.preventDefault()
             event.stopPropagation()
-            if (value != null) send({ type: 'CELL.SET_VALUE', index, digit: null })
-            else send({ type: 'CELL.CLEAR_NOTES', index })
+            if (selectedIndices.length > 1 && selectedIndices.includes(index)) {
+              // A single SET_VALUE(null) dispatch, not CLEAR_NOTES-then-SET_VALUE: `commitValue`
+              // itself now handles both cases (clear value + restore notes on a valued cell,
+              // clear residual notes on an already-empty one) within one pass — two separate
+              // sends here would each build their commit from a stale snapshot taken before the
+              // other's changes were applied, since Zag's React-backed bindable context isn't
+              // read-your-own-writes across two `send()` calls in the same synchronous burst.
+              send({ type: 'CELL.SET_VALUE', index, digit: null })
+            } else if (value != null) {
+              send({ type: 'CELL.SET_VALUE', index, digit: null })
+            } else {
+              send({ type: 'CELL.CLEAR_NOTES', index })
+            }
             return
           }
 

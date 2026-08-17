@@ -73,6 +73,8 @@ export interface SudokuStateSnapshot {
   solved: boolean
   disabled: boolean
   focusedIndex: number
+  /** Additional cells selected via Cmd/Ctrl+click, always including `focusedIndex` when non-empty. Empty when there's no active multi-selection. */
+  selectedIndices: number[]
   noteMode: boolean
   highlightMode: SudokuHighlightKind
   canUndo: boolean
@@ -84,6 +86,7 @@ export type SudokuGuard<TData> = (params: { data: TData; state: SudokuStateSnaps
 /** Called after an event's mutation has been applied, with the state as it was immediately before. */
 export type SudokuCallback<TData> = (params: { data: TData; prevState: SudokuStateSnapshot }) => void
 
+/** `digit: null` covers both clearing a valued cell and, on a multi-selection, Backspace clearing residual notes on an already-empty selected cell. */
 export interface SudokuSetValueData {
   index: number
   digit: number | null
@@ -208,6 +211,14 @@ export interface SudokuSchema {
     highlightMode: SudokuHighlightKind
     /** Roving-tabindex focused cell. */
     focusedIndex: number
+    /**
+     * Additional cells selected via Cmd/Ctrl+click, always including `focusedIndex` when
+     * non-empty (length > 1). Empty means "no active multi-selection" — cell-mutating events
+     * then target only the single cell they were dispatched for, as if this didn't exist.
+     * Collapses back to empty on a plain click/arrow-key move, or when toggled down to <= 1
+     * member. Excluded from undo/redo history, like `focusedIndex`.
+     */
+    selectedIndices: number[]
   }
   refs: {
     past: SudokuHistorySnapshot[]
@@ -267,6 +278,10 @@ export interface SudokuApi<T extends PropTypes = PropTypes> extends SudokuStateS
   focusCell: (index: number) => void
   /** Moves keyboard focus by `(rowDelta, colDelta)`, clamped at the grid edges. */
   moveFocus: (rowDelta: number, colDelta: number) => void
+  /** Focuses `index` and collapses any active multi-selection to just it — the plain-click behavior. */
+  selectCell: (index: number) => void
+  /** Toggles `index`'s membership in the multi-selection (Cmd/Ctrl+click behavior) and focuses it. */
+  toggleSelected: (index: number) => void
   undo: () => void
   redo: () => void
 

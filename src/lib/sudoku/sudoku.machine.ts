@@ -310,6 +310,7 @@ function buildStateSnapshot({
     solved: computed('solved'),
     disabled: !!prop('disabled'),
     focusedIndex: context.get('focusedIndex'),
+    selectedIndices: context.get('selectedIndices'),
     noteMode: context.get('noteMode'),
     highlightMode: context.get('highlightMode'),
     canUndo: computed('canUndo'),
@@ -327,14 +328,16 @@ interface CommitHooks<TData> {
  * Pushes the pre-mutation state onto the undo stack, clears redo, then applies `updates` — but
  * only once `hooks.shouldCommit` (if given) has had a chance to veto by returning `false`.
  * `hooks.onCommit` then fires with the state as it stood immediately before this mutation.
+ * `hooks` itself is optional: batch callers (see `resolveTargets`) that have already run their
+ * own per-cell guard/callback checks before accumulating `updates` pass no hooks here at all.
  */
 function commit<TData>(
   { context, refs, prop, computed }: CommitParams,
   updates: Partial<SudokuHistorySnapshot>,
-  hooks: CommitHooks<TData>,
+  hooks?: CommitHooks<TData>,
 ) {
   const prevState = buildStateSnapshot({ context, computed, prop })
-  if (hooks.shouldCommit?.({ data: hooks.data, state: prevState }) === false) return
+  if (hooks && hooks.shouldCommit?.({ data: hooks.data, state: prevState }) === false) return
 
   const past = [...refs.get('past'), snapshot({ context })]
   const max = prop('maxHistoryLength')
@@ -345,7 +348,17 @@ function commit<TData>(
     context.set(key, updates[key] as never)
   }
 
-  hooks.onCommit?.({ data: hooks.data, prevState })
+  if (hooks) hooks.onCommit?.({ data: hooks.data, prevState })
+}
+
+/**
+ * Every cell-targeting cursor/entry event resolves its actual target set through here: when
+ * `selectedIndices` holds an active multi-selection (length > 1) that includes the cell the
+ * event was dispatched for, the whole selection is the target; otherwise it's just that one
+ * cell — the ordinary, pre-multi-select behavior.
+ */
+function resolveTargets(selectedIndices: number[], eventIndex: number): number[] {
+  return selectedIndices.length > 1 && selectedIndices.includes(eventIndex) ? selectedIndices : [eventIndex]
 }
 
 /**
@@ -355,58 +368,89 @@ function commit<TData>(
  * `digit` from every peer's notes/highlights. Clearing (`digit === null`) restores from that
  * stash instead of just blanking the cell — this is what makes Backspace on a valued cell a
  * deterministic "clear and restore this cell" action rather than a walk through global undo.
+ *
+ * `indices` may target more than one cell at once (an active multi-selection): every cell that
+ * passes `hooks.shouldCommit` lands in a single shared `commit()` call — one history entry for
+ * the whole batch — with `hooks.onCommit` then firing once per cell that actually committed.
  */
 function commitValue<TData>(
   { context, refs, prop, computed }: CommitParams,
-  index: number,
+  indices: number[],
   digit: number | null,
-  hooks: CommitHooks<TData>,
+  hooks: {
+    data: (index: number) => TData
+    shouldCommit?: SudokuGuard<TData> | undefined
+    onCommit?: SudokuCallback<TData> | undefined
+  },
 ) {
-  const values = context.get('values')
-  if (values[index] === digit) return
+  const prevState = buildStateSnapshot({ context, computed, prop })
+  const layout = computed('layout')
 
-  const nextValues = withCell(values, index, digit)
-  let nextNotes = context.get('notes')
-  let nextHighlights = context.get('highlights')
-  let nextNotesInitialized = context.get('notesInitialized')
-  let nextHiddenCells = context.get('hiddenCells')
+  let values = context.get('values')
+  let notes = context.get('notes')
+  let highlights = context.get('highlights')
+  let notesInitialized = context.get('notesInitialized')
+  let hiddenCells = context.get('hiddenCells')
+  const committed: number[] = []
 
-  if (digit != null) {
-    nextHiddenCells = withCell(nextHiddenCells, index, {
-      notes: nextNotes[index],
-      highlights: nextHighlights[index],
-      notesInitialized: nextNotesInitialized[index],
-    })
-    nextNotes = withCell(nextNotes, index, [])
-    nextHighlights = withCell(nextHighlights, index, {})
-    nextNotesInitialized = withCell(nextNotesInitialized, index, false)
+  for (const index of indices) {
+    if (values[index] === digit) {
+      // Already at the target value. For a Backspace-style clear (digit === null) on a cell
+      // that's already empty but still carries residual notes/highlights (e.g. one cell in a
+      // multi-selection with a mix of valued and empty-with-notes cells), clear those too —
+      // folded into this same pass, and this same commit, rather than a second dispatched
+      // event: a later `send()` in the same synchronous batch can't see an earlier one's
+      // `context.set()` here (Zag's React-backed bindable context isn't read-your-own-writes
+      // across separate actions within one tick), so two sequential commits would have the
+      // second silently clobber the first's changes with its own stale pre-mutation snapshot.
+      if (digit == null && (notes[index].length > 0 || Object.keys(highlights[index]).length > 0)) {
+        if (hooks.shouldCommit?.({ data: hooks.data(index), state: prevState }) === false) continue
+        notes = withCell(notes, index, [])
+        highlights = withCell(highlights, index, {})
+        notesInitialized = withCell(notesInitialized, index, false)
+        committed.push(index)
+      }
+      continue
+    }
+    if (hooks.shouldCommit?.({ data: hooks.data(index), state: prevState }) === false) continue
 
-    const peers = peerCellsOf(index, computed('layout'))
-    nextNotes = nextNotes.map((cellNotes, i) => (peers.has(i) ? cellNotes.filter((d) => d !== digit) : cellNotes))
-    nextHighlights = nextHighlights.map((cellHighlights, i) => {
-      if (!peers.has(i) || !(digit in cellHighlights)) return cellHighlights
-      const { [digit]: _removed, ...rest } = cellHighlights
-      return rest
-    })
-  } else {
-    const hidden = nextHiddenCells[index]
-    nextNotes = withCell(nextNotes, index, hidden?.notes ?? [])
-    nextHighlights = withCell(nextHighlights, index, hidden?.highlights ?? {})
-    nextNotesInitialized = withCell(nextNotesInitialized, index, hidden?.notesInitialized ?? false)
-    nextHiddenCells = withCell(nextHiddenCells, index, null)
+    values = withCell(values, index, digit)
+
+    if (digit != null) {
+      hiddenCells = withCell(hiddenCells, index, {
+        notes: notes[index],
+        highlights: highlights[index],
+        notesInitialized: notesInitialized[index],
+      })
+      notes = withCell(notes, index, [])
+      highlights = withCell(highlights, index, {})
+      notesInitialized = withCell(notesInitialized, index, false)
+
+      const peers = peerCellsOf(index, layout)
+      notes = notes.map((cellNotes, i) => (peers.has(i) ? cellNotes.filter((d) => d !== digit) : cellNotes))
+      highlights = highlights.map((cellHighlights, i) => {
+        if (!peers.has(i) || !(digit in cellHighlights)) return cellHighlights
+        const { [digit]: _removed, ...rest } = cellHighlights
+        return rest
+      })
+    } else {
+      const hidden = hiddenCells[index]
+      notes = withCell(notes, index, hidden?.notes ?? [])
+      highlights = withCell(highlights, index, hidden?.highlights ?? {})
+      notesInitialized = withCell(notesInitialized, index, hidden?.notesInitialized ?? false)
+      hiddenCells = withCell(hiddenCells, index, null)
+    }
+
+    committed.push(index)
   }
 
-  commit(
-    { context, refs, prop, computed },
-    {
-      values: nextValues,
-      notes: nextNotes,
-      highlights: nextHighlights,
-      notesInitialized: nextNotesInitialized,
-      hiddenCells: nextHiddenCells,
-    },
-    hooks,
-  )
+  if (committed.length === 0) return
+
+  commit({ context, refs, prop, computed }, { values, notes, highlights, notesInitialized, hiddenCells })
+
+  for (const index of committed) {
+    hooks.onCommit?.({ data: hooks.data(index), prevState })
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -517,6 +561,9 @@ export const machine = createMachine<SudokuSchema>({
       focusedIndex: bindable<number>(() => ({
         defaultValue: 0,
       })),
+      selectedIndices: bindable<number[]>(() => ({
+        defaultValue: [0],
+      })),
     }
   },
 
@@ -562,6 +609,8 @@ export const machine = createMachine<SudokuSchema>({
   on: {
     'CELL.FOCUS': { actions: ['setFocusedIndex'] },
     'CELL.MOVE_FOCUS': { actions: ['moveFocus'] },
+    'CELL.SELECT': { actions: ['selectCell'] },
+    'CELL.TOGGLE_SELECTED': { actions: ['toggleSelected'] },
     'CELL.SET_VALUE': { actions: ['setCellValue'] },
     'CELL.TOGGLE_NOTE': { actions: ['toggleNote'] },
     'CELL.TOGGLE_NOTE_HIGHLIGHT': { actions: ['toggleNoteHighlight'] },
@@ -589,94 +638,154 @@ export const machine = createMachine<SudokuSchema>({
         const index = context.get('focusedIndex')
         const row = clamp(rowOf(index, size) + event.rowDelta, 0, size - 1)
         const col = clamp(colOf(index, size) + event.colDelta, 0, size - 1)
-        context.set('focusedIndex', row * size + col)
+        const next = row * size + col
+        context.set('focusedIndex', next)
+        context.set('selectedIndices', [next])
+      },
+      selectCell({ context, event }) {
+        context.set('focusedIndex', event.index)
+        context.set('selectedIndices', [event.index])
+      },
+      toggleSelected({ context, event }) {
+        // Reads `selectedIndices`, never `focusedIndex`, as the prior selection: a native
+        // `focus` event always fires before `click` for a mouse interaction, and `onFocus`
+        // unconditionally moves `focusedIndex` to the clicked cell before this action ever
+        // runs — so by now `focusedIndex` already *is* `event.index`, and using it as "the
+        // cell(s) selected before this click" would make a cell look like it's toggling
+        // itself off on the very first Cmd/Ctrl+click of a selection. `selectedIndices` is
+        // untouched by focus events, so it's not subject to that race.
+        const { index } = event
+        const base = context.get('selectedIndices')
+        const next = base.includes(index) ? base.filter((i) => i !== index) : [...base, index]
+        context.set('selectedIndices', next.length > 0 ? next : [index])
+        context.set('focusedIndex', index)
       },
       setCellValue({ context, event, computed, refs, prop }) {
-        if (computed('given')[event.index]) return
-        commitValue({ context, refs, prop, computed }, event.index, event.digit, {
-          data: { index: event.index, digit: event.digit },
+        const given = computed('given')
+        if (given[event.index]) return
+        const targets = resolveTargets(context.get('selectedIndices'), event.index).filter((i) => !given[i])
+        if (targets.length === 0) return
+        commitValue({ context, refs, prop, computed }, targets, event.digit, {
+          data: (index) => ({ index, digit: event.digit }),
           shouldCommit: prop('shouldSetValue'),
           onCommit: prop('onSetValue'),
         })
       },
       toggleNote({ context, event, computed, refs, prop }) {
-        const { index, digit } = event
-        if (computed('given')[index]) return
-        if (context.get('values')[index] != null) return
+        const { digit } = event
+        const given = computed('given')
+        const values = context.get('values')
+        const targets = resolveTargets(context.get('selectedIndices'), event.index).filter(
+          (i) => !given[i] && values[i] == null,
+        )
+        if (targets.length === 0) return
 
-        const notes = context.get('notes')
-        const cellNotes = notes[index]
-        const has = cellNotes.includes(digit)
-        const nextCellNotes = has ? cellNotes.filter((d) => d !== digit) : [...cellNotes, digit].sort((a, b) => a - b)
-        const updates: Partial<SudokuHistorySnapshot> = { notes: withCell(notes, index, nextCellNotes) }
+        const prevState = buildStateSnapshot({ context, computed, prop })
+        let notes = context.get('notes')
+        let highlights = context.get('highlights')
+        let notesInitialized = context.get('notesInitialized')
+        const committed: number[] = []
 
-        if (has) {
-          const highlights = context.get('highlights')
-          const cellHighlights = highlights[index]
-          if (digit in cellHighlights) {
-            const { [digit]: _removed, ...rest } = cellHighlights
-            updates.highlights = withCell(highlights, index, rest)
+        for (const index of targets) {
+          const data = { index, digit }
+          if (prop('shouldToggleNote')?.({ data, state: prevState }) === false) continue
+
+          const cellNotes = notes[index]
+          const has = cellNotes.includes(digit)
+          const nextCellNotes = has ? cellNotes.filter((d) => d !== digit) : [...cellNotes, digit].sort((a, b) => a - b)
+          notes = withCell(notes, index, nextCellNotes)
+
+          if (has) {
+            const cellHighlights = highlights[index]
+            if (digit in cellHighlights) {
+              const { [digit]: _removed, ...rest } = cellHighlights
+              highlights = withCell(highlights, index, rest)
+            }
+            if (nextCellNotes.length === 0) {
+              notesInitialized = withCell(notesInitialized, index, false)
+            }
           }
-          if (nextCellNotes.length === 0) {
-            updates.notesInitialized = withCell(context.get('notesInitialized'), index, false)
-          }
+
+          committed.push(index)
         }
 
-        commit({ context, refs, prop, computed }, updates, {
-          data: { index, digit },
-          shouldCommit: prop('shouldToggleNote'),
-          onCommit: prop('onToggleNote'),
-        })
+        if (committed.length === 0) return
+        commit({ context, refs, prop, computed }, { notes, highlights, notesInitialized })
+        for (const index of committed) {
+          prop('onToggleNote')?.({ data: { index, digit }, prevState })
+        }
       },
       toggleNoteHighlight({ context, event, computed, refs, prop }) {
-        const { index, digit } = event
-        if (computed('given')[index]) return
-        if (context.get('values')[index] != null) return
+        const { digit } = event
+        const given = computed('given')
+        const values = context.get('values')
+        const targets = resolveTargets(context.get('selectedIndices'), event.index).filter(
+          (i) => !given[i] && values[i] == null,
+        )
+        if (targets.length === 0) return
 
         const mode = context.get('highlightMode')
-        const notes = context.get('notes')
-        const highlights = context.get('highlights')
-        const cellNotes = notes[index]
-        const cellHighlights = highlights[index]
-        const hasNote = cellNotes.includes(digit)
-        const currentKind = cellHighlights[digit]
+        const prevState = buildStateSnapshot({ context, computed, prop })
+        let notes = context.get('notes')
+        let highlights = context.get('highlights')
+        const committed: number[] = []
 
-        const updates: Partial<SudokuHistorySnapshot> = {}
+        for (const index of targets) {
+          const data = { index, digit }
+          if (prop('shouldToggleNoteHighlight')?.({ data, state: prevState }) === false) continue
 
-        if (!hasNote) {
-          updates.notes = withCell(
-            notes,
-            index,
-            [...cellNotes, digit].sort((a, b) => a - b),
-          )
-          updates.highlights = withCell(highlights, index, { ...cellHighlights, [digit]: mode })
-        } else if (currentKind === mode) {
-          const { [digit]: _removed, ...rest } = cellHighlights
-          updates.highlights = withCell(highlights, index, rest)
-        } else {
-          updates.highlights = withCell(highlights, index, { ...cellHighlights, [digit]: mode })
+          const cellNotes = notes[index]
+          const cellHighlights = highlights[index]
+          const hasNote = cellNotes.includes(digit)
+          const currentKind = cellHighlights[digit]
+
+          if (!hasNote) {
+            notes = withCell(
+              notes,
+              index,
+              [...cellNotes, digit].sort((a, b) => a - b),
+            )
+            highlights = withCell(highlights, index, { ...cellHighlights, [digit]: mode })
+          } else if (currentKind === mode) {
+            const { [digit]: _removed, ...rest } = cellHighlights
+            highlights = withCell(highlights, index, rest)
+          } else {
+            highlights = withCell(highlights, index, { ...cellHighlights, [digit]: mode })
+          }
+
+          committed.push(index)
         }
 
-        commit({ context, refs, prop, computed }, updates, {
-          data: { index, digit },
-          shouldCommit: prop('shouldToggleNoteHighlight'),
-          onCommit: prop('onToggleNoteHighlight'),
-        })
+        if (committed.length === 0) return
+        commit({ context, refs, prop, computed }, { notes, highlights })
+        for (const index of committed) {
+          prop('onToggleNoteHighlight')?.({ data: { index, digit }, prevState })
+        }
       },
       clearCellNotes({ context, event, computed, refs, prop }) {
-        const { index } = event
-        const notes = context.get('notes')
-        const highlights = context.get('highlights')
-        if (notes[index].length === 0 && Object.keys(highlights[index]).length === 0) return
-        commit(
-          { context, refs, prop, computed },
-          {
-            notes: withCell(notes, index, []),
-            highlights: withCell(highlights, index, {}),
-            notesInitialized: withCell(context.get('notesInitialized'), index, false),
-          },
-          { data: { index }, shouldCommit: prop('shouldClearCellNotes'), onCommit: prop('onClearCellNotes') },
-        )
+        const targets = resolveTargets(context.get('selectedIndices'), event.index)
+        const prevState = buildStateSnapshot({ context, computed, prop })
+        let notes = context.get('notes')
+        let highlights = context.get('highlights')
+        let notesInitialized = context.get('notesInitialized')
+        const committed: number[] = []
+
+        for (const index of targets) {
+          if (notes[index].length === 0 && Object.keys(highlights[index]).length === 0) continue
+          const data = { index }
+          if (prop('shouldClearCellNotes')?.({ data, state: prevState }) === false) continue
+
+          notes = withCell(notes, index, [])
+          highlights = withCell(highlights, index, {})
+          notesInitialized = withCell(notesInitialized, index, false)
+          committed.push(index)
+        }
+
+        if (committed.length === 0) return
+        commit({ context, refs, prop, computed }, { notes, highlights, notesInitialized })
+        for (const index of committed) {
+          prop('onClearCellNotes')?.({ data: { index }, prevState })
+        }
       },
       autoSolveCell({ context, event, computed, refs, prop }) {
         const { index } = event
@@ -684,8 +793,8 @@ export const machine = createMachine<SudokuSchema>({
         if (context.get('values')[index] != null) return
         const digit = computed('singleCandidate')[index]
         if (digit == null) return
-        commitValue({ context, refs, prop, computed }, index, digit, {
-          data: { index },
+        commitValue({ context, refs, prop, computed }, [index], digit, {
+          data: (i) => ({ index: i }),
           shouldCommit: prop('shouldAutoSolveCell'),
           onCommit: prop('onAutoSolveCell'),
         })

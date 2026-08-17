@@ -157,27 +157,33 @@ export function SudokuDocs() {
         parts={[
           {
             name: 'Arrow keys',
-            description: 'Move focus one cell at a time, clamped at the grid edges (not wrapped).',
+            description:
+              'Move focus one cell at a time, clamped at the grid edges (not wrapped). Collapses an active multi-selection down to just the newly-focused cell.',
           },
           {
             name: 'Digit key (1..size)',
             description:
-              "Sets the cell's value when `noteMode` is off; toggles a plain candidate note when `noteMode` is on.",
+              "Sets the cell's value when `noteMode` is off; toggles a plain candidate note when `noteMode` is on. With a multi-selection active (see Cmd/Ctrl + Click below), applies to every selected cell at once, as a single undo step.",
           },
           {
             name: 'Shift + digit key',
             description:
-              "Toggles a plain candidate note, even while `noteMode` is off — a shortcut for jotting one note without leaving value-entry mode. While `noteMode` IS on, Shift instead marks/re-tags the note as highlighted using the current `highlightMode` ('box', 'row', or 'col'), since a plain digit there already toggles a note.",
+              "Toggles a plain candidate note, even while `noteMode` is off — a shortcut for jotting one note without leaving value-entry mode. While `noteMode` IS on, Shift instead marks/re-tags the note as highlighted using the current `highlightMode` ('box', 'row', or 'col'), since a plain digit there already toggles a note. Also fans out across a multi-selection, like a plain digit key.",
           },
           {
             name: 'Backspace / Delete',
             description:
-              "On a valued cell, clears its value and restores the notes it had right before being filled in — deterministically, independent of what else has happened in the undo/redo history since. On an empty cell, clears just that cell's notes. No-op on a given cell. (The separate Undo/Redo buttons still walk the full action history.)",
+              "On a valued cell, clears its value and restores the notes it had right before being filled in — deterministically, independent of what else has happened in the undo/redo history since. On an empty cell, clears just that cell's notes. No-op on a given cell. With a multi-selection active, applies per-cell across the whole selection (each cell cleared or notes-cleared based on its own state). (The separate Undo/Redo buttons still walk the full action history.)",
           },
           {
             name: 'Click / tap',
             description:
-              'Focuses the cell; if its notes (established via `autoNote()`) have narrowed to exactly one remaining, un-eliminated candidate (`autoSolveOnClick`, on by default), commits that digit immediately. Deliberately requires the player to have actually noted the cell — a forced cell the assist could solve from live constraint math alone, but that was never noted, does not auto-solve.',
+              'Focuses the cell, replacing any active multi-selection; if its notes (established via `autoNote()`) have narrowed to exactly one remaining, un-eliminated candidate (`autoSolveOnClick`, on by default), commits that digit immediately. Deliberately requires the player to have actually noted the cell — a forced cell the assist could solve from live constraint math alone, but that was never noted, does not auto-solve.',
+          },
+          {
+            name: 'Cmd (Mac) / Ctrl + Click',
+            description:
+              'Toggles the clicked cell into or out of a multi-selection alongside whichever cell(s) were already selected, and focuses it — never triggers auto-solve. Digit keys, Shift+digit, and Backspace then act on every selected cell. A plain click or an arrow key press collapses the selection back down to one cell.',
           },
         ]}
       />
@@ -278,7 +284,7 @@ export function SudokuDocs() {
             name: 'shouldSetValue / onSetValue',
             type: '{ index: number; digit: number | null }',
             description:
-              'Committing (or clearing) a cell — via setValue(), a digit key, Backspace, or click auto-solve.',
+              'Committing (or clearing) a cell — via setValue(), a digit key, Backspace, or click auto-solve. On a multi-selection, also covers Backspace clearing residual notes on an already-empty selected cell (digit is null there too).',
           },
           {
             name: 'shouldToggleNote / onToggleNote',
