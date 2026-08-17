@@ -1,5 +1,15 @@
 import { useSudokuContext } from '../lib/sudoku'
 
+export interface SudokuSameValueHighlightProps {
+  /**
+   * Overrides which digit to highlight instead of deriving it from the focused cell's value —
+   * e.g. a mobile digit pad highlighting a tapped digit while no cell is focused. Omit to use
+   * the focused cell's value (the default, desktop-oriented behavior); pass `null` explicitly
+   * to force "nothing highlighted" regardless of focus.
+   */
+  digit?: number | null
+}
+
 /**
  * Selecting a cell with a committed value (given or entered) highlights every other cell
  * sharing that value, using the same tint for any cell that merely has a *note* for that
@@ -8,9 +18,9 @@ import { useSudokuContext } from '../lib/sudoku'
  * `data-value`/`data-digit`/`data-part` attributes it already emits — no changes to the
  * library itself. Render as a child of `<Sudoku.Root>`, alongside its other parts.
  */
-export function SudokuSameValueHighlight() {
+export function SudokuSameValueHighlight({ digit }: SudokuSameValueHighlightProps = {}) {
   const sudoku = useSudokuContext()
-  const selectedValue = sudoku.values[sudoku.focusedIndex]
+  const selectedValue = digit === undefined ? sudoku.values[sudoku.focusedIndex] : digit
 
   if (selectedValue == null) return null
 
