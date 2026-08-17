@@ -99,7 +99,7 @@ export function SudokuDocs() {
           {
             name: 'Backspace / Delete',
             description:
-              "On a valued cell, undoes the most recent action (bringing that cell's prior notes back). On an empty cell, clears just that cell's notes. No-op on a given cell.",
+              "On a valued cell, clears its value and restores the notes it had right before being filled in — deterministically, independent of what else has happened in the undo/redo history since. On an empty cell, clears just that cell's notes. No-op on a given cell. (The separate Undo/Redo buttons still walk the full action history.)",
           },
           {
             name: 'Click / tap',

@@ -4,6 +4,7 @@ import {
   SUDOKU_9X9,
   type ResolvedSudokuLayout,
   type SudokuActivePair,
+  type SudokuHiddenCell,
   type SudokuHighlightKind,
   type SudokuHistorySnapshot,
   type SudokuLayout,
@@ -279,6 +280,7 @@ function snapshot({ context }: Pick<CommitParams, 'context'>): SudokuHistorySnap
     notes: context.get('notes'),
     highlights: context.get('highlights'),
     notesInitialized: context.get('notesInitialized'),
+    hiddenCells: context.get('hiddenCells'),
     noteMode: context.get('noteMode'),
     highlightMode: context.get('highlightMode'),
   }
@@ -296,7 +298,14 @@ function commit({ context, refs, prop }: CommitParams, updates: Partial<SudokuHi
   }
 }
 
-/** Shared by `setCellValue`/`autoSolveCell`: commits a value, wipes the cell's own notes, and (per requirement #5) clears `digit` from every peer's notes/highlights. */
+/**
+ * Shared by `setCellValue`/`autoSolveCell`. Committing a digit stashes the cell's current
+ * notes/highlights/notesInitialized into `hiddenCells[index]` (so clearing it later restores
+ * them, independent of anything else that happens in between) and, per requirement #5, clears
+ * `digit` from every peer's notes/highlights. Clearing (`digit === null`) restores from that
+ * stash instead of just blanking the cell — this is what makes Backspace on a valued cell a
+ * deterministic "clear and restore this cell" action rather than a walk through global undo.
+ */
 function commitValue(
   { context, refs, prop, computed }: CommitParams & Pick<Params<SudokuSchema>, 'computed'>,
   index: number,
@@ -306,11 +315,21 @@ function commitValue(
   if (values[index] === digit) return
 
   const nextValues = withCell(values, index, digit)
-  let nextNotes = withCell(context.get('notes'), index, [])
-  let nextHighlights = withCell(context.get('highlights'), index, {})
-  const nextNotesInitialized = withCell(context.get('notesInitialized'), index, false)
+  let nextNotes = context.get('notes')
+  let nextHighlights = context.get('highlights')
+  let nextNotesInitialized = context.get('notesInitialized')
+  let nextHiddenCells = context.get('hiddenCells')
 
   if (digit != null) {
+    nextHiddenCells = withCell(nextHiddenCells, index, {
+      notes: nextNotes[index],
+      highlights: nextHighlights[index],
+      notesInitialized: nextNotesInitialized[index],
+    })
+    nextNotes = withCell(nextNotes, index, [])
+    nextHighlights = withCell(nextHighlights, index, {})
+    nextNotesInitialized = withCell(nextNotesInitialized, index, false)
+
     const peers = peerCellsOf(index, computed('layout'))
     nextNotes = nextNotes.map((cellNotes, i) => (peers.has(i) ? cellNotes.filter((d) => d !== digit) : cellNotes))
     nextHighlights = nextHighlights.map((cellHighlights, i) => {
@@ -318,11 +337,23 @@ function commitValue(
       const { [digit]: _removed, ...rest } = cellHighlights
       return rest
     })
+  } else {
+    const hidden = nextHiddenCells[index]
+    nextNotes = withCell(nextNotes, index, hidden?.notes ?? [])
+    nextHighlights = withCell(nextHighlights, index, hidden?.highlights ?? {})
+    nextNotesInitialized = withCell(nextNotesInitialized, index, hidden?.notesInitialized ?? false)
+    nextHiddenCells = withCell(nextHiddenCells, index, null)
   }
 
   commit(
     { context, refs, prop },
-    { values: nextValues, notes: nextNotes, highlights: nextHighlights, notesInitialized: nextNotesInitialized },
+    {
+      values: nextValues,
+      notes: nextNotes,
+      highlights: nextHighlights,
+      notesInitialized: nextNotesInitialized,
+      hiddenCells: nextHiddenCells,
+    },
   )
 }
 
@@ -405,6 +436,9 @@ export const machine = createMachine<SudokuSchema>({
       })),
       notesInitialized: bindable<boolean[]>(() => ({
         defaultValue: Array.from({ length: prop('layout').size ** 2 }, () => false),
+      })),
+      hiddenCells: bindable<Array<SudokuHiddenCell | null>>(() => ({
+        defaultValue: Array.from({ length: prop('layout').size ** 2 }, () => null),
       })),
       focusedIndex: bindable<number>(() => ({
         defaultValue: 0,
@@ -589,6 +623,7 @@ export const machine = createMachine<SudokuSchema>({
             notes: context.get('notes').map(() => [] as number[]),
             highlights: context.get('highlights').map(() => ({}) as Record<number, SudokuHighlightKind>),
             notesInitialized: context.get('notesInitialized').map(() => false),
+            hiddenCells: context.get('hiddenCells').map(() => null),
           },
         )
       },
@@ -609,6 +644,7 @@ export const machine = createMachine<SudokuSchema>({
         context.set('notes', previous.notes)
         context.set('highlights', previous.highlights)
         context.set('notesInitialized', previous.notesInitialized)
+        context.set('hiddenCells', previous.hiddenCells)
         context.set('noteMode', previous.noteMode)
         context.set('highlightMode', previous.highlightMode)
       },
@@ -623,6 +659,7 @@ export const machine = createMachine<SudokuSchema>({
         context.set('notes', next.notes)
         context.set('highlights', next.highlights)
         context.set('notesInitialized', next.notesInitialized)
+        context.set('hiddenCells', next.hiddenCells)
         context.set('noteMode', next.noteMode)
         context.set('highlightMode', next.highlightMode)
       },

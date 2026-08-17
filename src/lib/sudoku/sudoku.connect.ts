@@ -148,21 +148,30 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
           }
         },
         onKeyDown(event) {
+          // stopPropagation on every handled key, not just preventDefault: preventDefault only
+          // suppresses the browser's own default action for *this* element, but the event still
+          // bubbles up the DOM past it. Cells are <button>s, not text inputs, so a host page's
+          // (or Storybook manager's) own global keyboard shortcuts — which typically only exempt
+          // input/textarea/contentEditable from bubbling — would otherwise still see these keys.
           switch (event.key) {
             case 'ArrowUp':
               event.preventDefault()
+              event.stopPropagation()
               send({ type: 'CELL.MOVE_FOCUS', rowDelta: -1, colDelta: 0 })
               return
             case 'ArrowDown':
               event.preventDefault()
+              event.stopPropagation()
               send({ type: 'CELL.MOVE_FOCUS', rowDelta: 1, colDelta: 0 })
               return
             case 'ArrowLeft':
               event.preventDefault()
+              event.stopPropagation()
               send({ type: 'CELL.MOVE_FOCUS', rowDelta: 0, colDelta: -1 })
               return
             case 'ArrowRight':
               event.preventDefault()
+              event.stopPropagation()
               send({ type: 'CELL.MOVE_FOCUS', rowDelta: 0, colDelta: 1 })
               return
           }
@@ -171,7 +180,8 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
 
           if (event.key === 'Backspace' || event.key === 'Delete') {
             event.preventDefault()
-            if (value != null) send({ type: 'HISTORY.UNDO' })
+            event.stopPropagation()
+            if (value != null) send({ type: 'CELL.SET_VALUE', index, digit: null })
             else send({ type: 'CELL.CLEAR_NOTES', index })
             return
           }
@@ -179,6 +189,7 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
           const digit = Number(event.key)
           if (!Number.isInteger(digit) || digit < 1 || digit > layout.size) return
           event.preventDefault()
+          event.stopPropagation()
 
           if (!noteMode) {
             send({ type: 'CELL.SET_VALUE', index, digit })

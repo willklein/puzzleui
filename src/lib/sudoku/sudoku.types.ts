@@ -32,13 +32,22 @@ export interface SudokuActivePair {
   cells: [number, number]
 }
 
-/** The 6 fields tracked by undo/redo history. `focusedIndex` is deliberately excluded so undo never moves the cursor. */
+/** A cell's notes/highlights/notesInitialized as they stood immediately before a value was committed into it, so clearing the value can restore them. */
+export interface SudokuHiddenCell {
+  notes: number[]
+  highlights: Record<number, SudokuHighlightKind>
+  notesInitialized: boolean
+}
+
+/** The 7 fields tracked by undo/redo history. `focusedIndex` is deliberately excluded so undo never moves the cursor. */
 export interface SudokuHistorySnapshot {
   values: Array<number | null>
   notes: number[][]
   highlights: Array<Record<number, SudokuHighlightKind>>
   /** Per cell, whether its notes were last (re)established via `autoNote()` — see `SudokuSchema.context.notesInitialized`. */
   notesInitialized: boolean[]
+  /** Per cell, the pre-commit notes to restore if/when its value is cleared — see `SudokuSchema.context.hiddenCells`. */
+  hiddenCells: Array<SudokuHiddenCell | null>
   noteMode: boolean
   highlightMode: SudokuHighlightKind
 }
@@ -99,6 +108,14 @@ export interface SudokuSchema {
      * whenever its notes are cleared (individually or grid-wide).
      */
     notesInitialized: boolean[]
+    /**
+     * Per cell, the notes/highlights/notesInitialized it had immediately before a value was
+     * last committed into it (or `null` if none stashed / already restored). `setValue`
+     * writes this when committing a digit and reads it back when clearing one, so Backspace
+     * on a valued cell deterministically restores that cell's own prior notes — independent
+     * of what else has happened in the undo/redo history since.
+     */
+    hiddenCells: Array<SudokuHiddenCell | null>
     noteMode: boolean
     highlightMode: SudokuHighlightKind
     /** Roving-tabindex focused cell. */
