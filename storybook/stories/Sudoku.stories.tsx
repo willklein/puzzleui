@@ -9,6 +9,7 @@ import {
   type SudokuLayout,
   type SudokuProps,
 } from '../../src/lib/sudoku'
+import { SudokuSameValueHighlight } from '../../src/examples/sudoku-same-value-highlight'
 
 // The classic example puzzle from Wikipedia's Sudoku article.
 // prettier-ignore
@@ -233,6 +234,24 @@ export const StrictMode: Story = {
       <Sudoku.SolvedIndicator className="sudoku-solved" fallback={<span>Keep going…</span>}>
         Solved!
       </Sudoku.SolvedIndicator>
+    </Sudoku.Root>
+  ),
+}
+
+/**
+ * `SudokuSameValueHighlight` (src/examples/sudoku-same-value-highlight.tsx) highlights every
+ * cell sharing the focused cell's value — built entirely from the public Api (`focusedIndex`,
+ * `values`) and the `data-value` attribute cells already carry, with zero changes to Sudoku
+ * itself. Focus a valued cell (e.g. the top-left "5") to see its other occurrences light up.
+ */
+export const SameValueHighlight: Story = {
+  render: () => (
+    <Sudoku.Root className="sudoku" layout={SUDOKU_9X9} givens={NINE_BY_NINE}>
+      <Sudoku.Toolbar />
+      <Sudoku.SolvedIndicator className="sudoku-solved" fallback={<span>Keep going…</span>}>
+        Solved!
+      </Sudoku.SolvedIndicator>
+      <SudokuSameValueHighlight />
     </Sudoku.Root>
   ),
 }

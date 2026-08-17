@@ -76,6 +76,29 @@ const USAGE_GUARDS = `// shouldEventName guards run first and can veto an attemp
   <Sudoku.Toolbar />
 </Sudoku.Root>`
 
+const USAGE_EXTERNAL = `// Not every "special feature" needs a Sudoku.Root prop — the public Api and its
+// data-value/data-part attributes are often enough on their own. This component
+// highlights every cell sharing the focused cell's value, with zero changes to
+// Sudoku itself; render it as a child of Sudoku.Root like any other part.
+import { useSudokuContext } from './lib/sudoku'
+
+function SudokuSameValueHighlight() {
+  const sudoku = useSudokuContext()
+  const selectedValue = sudoku.values[sudoku.focusedIndex]
+  if (selectedValue == null) return null
+
+  return (
+    <style>{\`[data-scope='sudoku'][data-part='cell'][data-value='\${selectedValue}'] {
+      background: var(--sudoku-same-value-bg);
+    }\`}</style>
+  )
+}
+
+<Sudoku.Root layout={SUDOKU_9X9} givens={givens}>
+  <Sudoku.Toolbar />
+  <SudokuSameValueHighlight />
+</Sudoku.Root>`
+
 export function SudokuDocs() {
   return (
     <section className="docs-section">
@@ -355,6 +378,7 @@ export function SudokuDocs() {
       <CodeBlock code={USAGE_TOOLBAR} />
       <CodeBlock code={USAGE_MODEL} />
       <CodeBlock code={USAGE_GUARDS} />
+      <CodeBlock code={USAGE_EXTERNAL} />
     </section>
   )
 }

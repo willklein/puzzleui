@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Sudoku, SUDOKU_4X4, SUDOKU_6X6, SUDOKU_9X9, type SudokuLayout } from '../lib/sudoku'
 import { SudokuDocs } from '../docs/sudoku-docs'
+import { SudokuSameValueHighlight } from './sudoku-same-value-highlight'
 
 interface SudokuPreset {
   value: string
@@ -83,6 +84,7 @@ export function SudokuExample() {
         <Sudoku.SolvedIndicator className="sudoku-solved" fallback={<span>Keep going…</span>}>
           Solved!
         </Sudoku.SolvedIndicator>
+        <SudokuSameValueHighlight />
       </Sudoku.Root>
 
       <div className="example-docs">

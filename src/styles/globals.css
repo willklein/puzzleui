@@ -12,6 +12,7 @@
   --sudoku-highlight-box: var(--accent-strong);
   --sudoku-highlight-row: var(--danger);
   --sudoku-highlight-col: #60a5fa;
+  --sudoku-same-value-bg: rgba(110, 231, 183, 0.18);
   --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 
   color-scheme: dark;
