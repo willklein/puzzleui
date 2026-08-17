@@ -344,21 +344,9 @@ notes mode, highlight mode, auto-note, and undo/redo.
 
 ## Architecture
 
-All three components follow the same pattern [Ark UI](https://ark-ui.com/) itself uses internally for every
-component (verified against `@ark-ui/react`'s own source):
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the component skeleton every component follows and design
+rationale for shared patterns (e.g. the `model` prop + guards/callbacks introduced for `Sudoku`) — read it
+before adding a new component or extending an existing one.
 
-- `*.types.ts` — the [Zag](https://zagjs.com/) `MachineSchema` (state/props/context/computed/events) plus
-  the public `Api` shape.
-- `*.machine.ts` — a `createMachine` state machine from `@zag-js/core` (props, context, computed, watchers,
-  transitions, actions).
-- `*.connect.ts` — turns a running machine `Service` into the public `Api`, producing DOM props via
-  `normalize.element(...)`/`normalize.button(...)` and `data-scope`/`data-part` attributes for styling
-  (Ark UI's own styling convention).
-- `use-*.ts` — the React hook: `useMachine(machine, props)` + `connect(service, normalizeProps)`, exactly the
-  pattern documented at [zagjs.com](https://zagjs.com/) and used by every Ark UI component.
-- `*-context.tsx`, `*-root.tsx`, `*-<part>.tsx` — the compound-component React layer, built on Ark UI's `ark`
-  factory (`@ark-ui/react/factory`) for polymorphic, `asChild`-capable DOM parts.
-
-Styling hooks into the same `[data-scope][data-part]` attributes Ark UI documents for its own components
-(`src/styles/globals.css`). The in-app docs (`src/docs`) are hand-authored, static content — not generated
-from source — so keep them in sync with this README when either changes.
+The in-app docs (`src/docs`) are hand-authored, static content — not generated from source — so keep them in
+sync with this README when either changes.
