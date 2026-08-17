@@ -958,17 +958,12 @@ body {
 .sudoku-mobile-page {
   max-width: 26rem;
   margin: 0 auto;
-  padding: 1.5rem 1rem 3rem;
-}
-
-.sudoku-mobile-header h1 {
-  margin: 0 0 1rem;
-  font-size: 1.5rem;
-  letter-spacing: -0.02em;
+  padding: 0.75rem 0.75rem 1rem;
 }
 
 .sudoku-mobile[data-part='root'] {
   align-items: stretch;
+  gap: 0.5rem;
 }
 
 /* Fills the page width instead of the base rule's fixed 2.5rem-per-cell sizing, so the grid
@@ -1000,6 +995,17 @@ body {
   flex-direction: column;
   align-items: stretch;
   flex-wrap: nowrap;
+  flex: 1;
+  gap: 0.4rem;
+}
+
+.sudoku-mobile-undo-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.sudoku-mobile-undo-row [data-scope='sudoku'][data-part='undo-trigger'],
+.sudoku-mobile-undo-row [data-scope='sudoku'][data-part='redo-trigger'] {
   flex: 1;
 }
 

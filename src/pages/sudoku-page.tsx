@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Sudoku, useSudoku, SUDOKU_9X9 } from '../lib/sudoku'
+import { useEffect, useRef, useState } from 'react'
+import { Sudoku, useSudoku, SUDOKU_9X9, type UseSudokuReturn } from '../lib/sudoku'
 import { SudokuSameValueHighlight } from '../examples/sudoku-same-value-highlight'
 
 // The classic example puzzle from Wikipedia's Sudoku article.
@@ -20,12 +20,66 @@ const NINE_BY_NINE: Array<number | null> = [
 
 const DIGITS = Array.from({ length: 9 }, (_, i) => i + 1)
 
+interface SudokuMobileCellProps {
+  sudoku: UseSudokuReturn
+  index: number
+  highlightedDigit: number | null
+  onHighlightDigit: (digit: number | null) => void
+}
+
 /**
- * A mobile-oriented Sudoku demo at `/sudoku` (not a Storybook story): a digit pad replaces
- * relying on a physical keyboard. Built with `Sudoku.Root`'s `model`/`renderGrid` props so this
- * component can own the puzzle instance directly, alongside two bits of state the library has
- * no opinion on: whether the grid currently has real focus, and which digit (if any) is
- * highlighted via a pad tap while it doesn't.
+ * A cell with its own tap gesture instead of the library's default click behavior — `getCellProps`'s
+ * own `onClick` can't be swapped out from under `Sudoku.Cell` (Zag's `mergeProps` *composes* handlers
+ * rather than letting a later one replace an earlier one), so this reimplements cell rendering
+ * directly from the public Api (`getCellProps`, `Sudoku.Note`) with a custom `onClick`:
+ *   - a digit is "armed" (tapped on the pad while no cell was focused): place it directly, paint-style.
+ *   - the cell already has a value: focus it and arm its digit, so its value is what's highlighted.
+ *   - otherwise (an empty cell, no digit armed): fold it into a touch multi-selection.
+ * The roving-tabindex focus-sync effect is copied from `sudoku-cell.tsx` — it's the one thing that
+ * still has to run per cell for keyboard nav to keep working alongside the tap gesture.
+ */
+function SudokuMobileCell({ sudoku, index, highlightedDigit, onHighlightDigit }: SudokuMobileCellProps) {
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const value = sudoku.values[index]
+  const noteColumns = Math.ceil(Math.sqrt(sudoku.layout.size))
+  const cellStyle = { '--sudoku-note-columns': noteColumns } as React.CSSProperties
+
+  useEffect(() => {
+    if (sudoku.focusedIndex === index && document.activeElement !== buttonRef.current) {
+      buttonRef.current?.focus()
+    }
+  }, [sudoku.focusedIndex, index])
+
+  function handleClick() {
+    if (highlightedDigit != null) {
+      sudoku.selectCell(index)
+      if (sudoku.noteMode) sudoku.toggleNote(index, highlightedDigit)
+      else sudoku.setValue(index, highlightedDigit)
+      return
+    }
+    if (value != null) {
+      sudoku.selectCell(index)
+      onHighlightDigit(value)
+      return
+    }
+    sudoku.toggleSelected(index)
+  }
+
+  return (
+    <button {...sudoku.getCellProps(index)} style={cellStyle} onClick={handleClick} ref={buttonRef}>
+      {value != null
+        ? value
+        : Array.from({ length: sudoku.layout.size }, (_, i) => <Sudoku.Note key={i + 1} index={index} digit={i + 1} />)}
+    </button>
+  )
+}
+
+/**
+ * A mobile-oriented Sudoku demo at `/sudoku` (not a Storybook story): a digit pad replaces relying
+ * on a physical keyboard. Built with `Sudoku.Root`'s `model`/`renderGrid` props so this component can
+ * own the puzzle instance directly, alongside state the library has no opinion on: whether the grid
+ * currently has real focus, and which digit (if any) is "armed" via a pad tap or a tap on a filled
+ * cell.
  */
 export function SudokuPage() {
   const sudoku = useSudoku({ layout: SUDOKU_9X9, givens: NINE_BY_NINE })
@@ -47,31 +101,65 @@ export function SudokuPage() {
 
   return (
     <div className="sudoku-mobile-page">
-      <header className="sudoku-mobile-header">
-        <h1>Sudoku</h1>
-      </header>
-
       <Sudoku.Root model={sudoku} renderGrid={false} className="sudoku sudoku-mobile">
         <div
           className="sudoku-mobile-grid"
           onFocus={() => setGridHasFocus(true)}
           onBlur={(event) => {
-            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-              setGridHasFocus(false)
+            const next = event.relatedTarget as HTMLElement | null
+            if (event.currentTarget.contains(next)) return
+            setGridHasFocus(false)
+            // A tap on a button (toolbar or digit pad) shouldn't collapse a selection that was
+            // just built to hand off to it — only "tapped elsewhere" should.
+            if (!(next instanceof HTMLButtonElement)) {
+              sudoku.selectCell(sudoku.focusedIndex)
             }
           }}
         >
-          <Sudoku.Grid />
+          <div
+            {...sudoku.getGridProps()}
+            style={
+              {
+                '--sudoku-size': sudoku.layout.size,
+                '--sudoku-boxes-across': sudoku.layout.boxesAcross,
+                '--sudoku-boxes-down': sudoku.layout.boxesDown,
+              } as React.CSSProperties
+            }
+          >
+            {Array.from({ length: sudoku.layout.size * sudoku.layout.size }, (_, index) => (
+              <SudokuMobileCell
+                key={index}
+                sudoku={sudoku}
+                index={index}
+                highlightedDigit={highlightedDigit}
+                onHighlightDigit={setHighlightedDigit}
+              />
+            ))}
+          </div>
         </div>
 
-        <SudokuSameValueHighlight digit={gridHasFocus ? undefined : highlightedDigit} />
+        {/* An armed digit always wins (survives note-mode toggling, a note-only paint tap, etc.);
+            otherwise fall back to the focused cell's own value — but only while the grid
+            actually has focus, so the highlight doesn't linger from a stale focusedIndex once
+            the grid's been tapped away from. */}
+        <SudokuSameValueHighlight digit={highlightedDigit ?? (gridHasFocus ? undefined : null)} />
 
         <Sudoku.SolvedIndicator className="sudoku-solved" fallback={<span>Keep going…</span>}>
           Solved!
         </Sudoku.SolvedIndicator>
 
         <div className="sudoku-mobile-controls">
-          <Sudoku.Toolbar className="sudoku-mobile-toolbar" />
+          <div className="sudoku-mobile-toolbar" data-scope="sudoku" data-part="toolbar">
+            <Sudoku.NoteModeToggle>Notes</Sudoku.NoteModeToggle>
+            <Sudoku.HighlightModeToggle mode="box" />
+            <Sudoku.HighlightModeToggle mode="row" />
+            <Sudoku.HighlightModeToggle mode="col" />
+            <Sudoku.AutoNoteTrigger />
+            <div className="sudoku-mobile-undo-row">
+              <Sudoku.UndoTrigger />
+              {sudoku.canRedo && <Sudoku.RedoTrigger />}
+            </div>
+          </div>
 
           <div className="sudoku-mobile-digitpad">
             {DIGITS.map((digit) => (
