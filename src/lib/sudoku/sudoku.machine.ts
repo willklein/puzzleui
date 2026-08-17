@@ -4,11 +4,14 @@ import {
   SUDOKU_9X9,
   type ResolvedSudokuLayout,
   type SudokuActivePair,
+  type SudokuCallback,
+  type SudokuGuard,
   type SudokuHiddenCell,
   type SudokuHighlightKind,
   type SudokuHistorySnapshot,
   type SudokuLayout,
   type SudokuSchema,
+  type SudokuStateSnapshot,
 } from './sudoku.types'
 
 // ---------------------------------------------------------------------------
@@ -272,7 +275,7 @@ function getConflicts(values: Array<number | null>, layout: ResolvedSudokuLayout
 // History (undo/redo)
 // ---------------------------------------------------------------------------
 
-type CommitParams = Pick<Params<SudokuSchema>, 'context' | 'refs' | 'prop'>
+type CommitParams = Pick<Params<SudokuSchema>, 'context' | 'refs' | 'prop' | 'computed'>
 
 function snapshot({ context }: Pick<CommitParams, 'context'>): SudokuHistorySnapshot {
   return {
@@ -286,8 +289,53 @@ function snapshot({ context }: Pick<CommitParams, 'context'>): SudokuHistorySnap
   }
 }
 
-/** Pushes the pre-mutation state onto the undo stack, clears redo, then applies `updates`. */
-function commit({ context, refs, prop }: CommitParams, updates: Partial<SudokuHistorySnapshot>) {
+function buildStateSnapshot({
+  context,
+  computed,
+  prop,
+}: Pick<Params<SudokuSchema>, 'context' | 'computed' | 'prop'>): SudokuStateSnapshot {
+  return {
+    layout: computed('layout'),
+    values: context.get('values'),
+    given: computed('given'),
+    notes: context.get('notes'),
+    highlights: context.get('highlights'),
+    notesInitialized: context.get('notesInitialized'),
+    activePairs: computed('activePairs'),
+    eliminated: computed('eliminated'),
+    remainingCandidates: computed('remainingCandidates'),
+    singleCandidate: computed('singleCandidate'),
+    conflicts: computed('conflicts'),
+    complete: computed('complete'),
+    solved: computed('solved'),
+    disabled: !!prop('disabled'),
+    focusedIndex: context.get('focusedIndex'),
+    noteMode: context.get('noteMode'),
+    highlightMode: context.get('highlightMode'),
+    canUndo: computed('canUndo'),
+    canRedo: computed('canRedo'),
+  }
+}
+
+interface CommitHooks<TData> {
+  data: TData
+  shouldCommit?: SudokuGuard<TData> | undefined
+  onCommit?: SudokuCallback<TData> | undefined
+}
+
+/**
+ * Pushes the pre-mutation state onto the undo stack, clears redo, then applies `updates` — but
+ * only once `hooks.shouldCommit` (if given) has had a chance to veto by returning `false`.
+ * `hooks.onCommit` then fires with the state as it stood immediately before this mutation.
+ */
+function commit<TData>(
+  { context, refs, prop, computed }: CommitParams,
+  updates: Partial<SudokuHistorySnapshot>,
+  hooks: CommitHooks<TData>,
+) {
+  const prevState = buildStateSnapshot({ context, computed, prop })
+  if (hooks.shouldCommit?.({ data: hooks.data, state: prevState }) === false) return
+
   const past = [...refs.get('past'), snapshot({ context })]
   const max = prop('maxHistoryLength')
   refs.set('past', past.length > max ? past.slice(past.length - max) : past)
@@ -296,6 +344,8 @@ function commit({ context, refs, prop }: CommitParams, updates: Partial<SudokuHi
   for (const key of Object.keys(updates) as Array<keyof SudokuHistorySnapshot>) {
     context.set(key, updates[key] as never)
   }
+
+  hooks.onCommit?.({ data: hooks.data, prevState })
 }
 
 /**
@@ -306,10 +356,11 @@ function commit({ context, refs, prop }: CommitParams, updates: Partial<SudokuHi
  * stash instead of just blanking the cell — this is what makes Backspace on a valued cell a
  * deterministic "clear and restore this cell" action rather than a walk through global undo.
  */
-function commitValue(
-  { context, refs, prop, computed }: CommitParams & Pick<Params<SudokuSchema>, 'computed'>,
+function commitValue<TData>(
+  { context, refs, prop, computed }: CommitParams,
   index: number,
   digit: number | null,
+  hooks: CommitHooks<TData>,
 ) {
   const values = context.get('values')
   if (values[index] === digit) return
@@ -346,7 +397,7 @@ function commitValue(
   }
 
   commit(
-    { context, refs, prop },
+    { context, refs, prop, computed },
     {
       values: nextValues,
       notes: nextNotes,
@@ -354,6 +405,7 @@ function commitValue(
       notesInitialized: nextNotesInitialized,
       hiddenCells: nextHiddenCells,
     },
+    hooks,
   )
 }
 
@@ -387,6 +439,28 @@ export const machine = createMachine<SudokuSchema>({
       onNoteModeChange: props.onNoteModeChange,
       onHighlightModeChange: props.onHighlightModeChange,
       onSolvedChange: props.onSolvedChange,
+      shouldSetValue: props.shouldSetValue,
+      onSetValue: props.onSetValue,
+      shouldToggleNote: props.shouldToggleNote,
+      onToggleNote: props.onToggleNote,
+      shouldToggleNoteHighlight: props.shouldToggleNoteHighlight,
+      onToggleNoteHighlight: props.onToggleNoteHighlight,
+      shouldClearCellNotes: props.shouldClearCellNotes,
+      onClearCellNotes: props.onClearCellNotes,
+      shouldAutoSolveCell: props.shouldAutoSolveCell,
+      onAutoSolveCell: props.onAutoSolveCell,
+      shouldAutoNote: props.shouldAutoNote,
+      onAutoNote: props.onAutoNote,
+      shouldClearAllNotes: props.shouldClearAllNotes,
+      onClearAllNotes: props.onClearAllNotes,
+      shouldSetHighlightMode: props.shouldSetHighlightMode,
+      onSetHighlightMode: props.onSetHighlightMode,
+      shouldSetNoteMode: props.shouldSetNoteMode,
+      onSetNoteMode: props.onSetNoteMode,
+      shouldUndo: props.shouldUndo,
+      onUndo: props.onUndo,
+      shouldRedo: props.shouldRedo,
+      onRedo: props.onRedo,
     }
   },
 
@@ -519,7 +593,11 @@ export const machine = createMachine<SudokuSchema>({
       },
       setCellValue({ context, event, computed, refs, prop }) {
         if (computed('given')[event.index]) return
-        commitValue({ context, refs, prop, computed }, event.index, event.digit)
+        commitValue({ context, refs, prop, computed }, event.index, event.digit, {
+          data: { index: event.index, digit: event.digit },
+          shouldCommit: prop('shouldSetValue'),
+          onCommit: prop('onSetValue'),
+        })
       },
       toggleNote({ context, event, computed, refs, prop }) {
         const { index, digit } = event
@@ -544,7 +622,11 @@ export const machine = createMachine<SudokuSchema>({
           }
         }
 
-        commit({ context, refs, prop }, updates)
+        commit({ context, refs, prop, computed }, updates, {
+          data: { index, digit },
+          shouldCommit: prop('shouldToggleNote'),
+          onCommit: prop('onToggleNote'),
+        })
       },
       toggleNoteHighlight({ context, event, computed, refs, prop }) {
         const { index, digit } = event
@@ -575,20 +657,25 @@ export const machine = createMachine<SudokuSchema>({
           updates.highlights = withCell(highlights, index, { ...cellHighlights, [digit]: mode })
         }
 
-        commit({ context, refs, prop }, updates)
+        commit({ context, refs, prop, computed }, updates, {
+          data: { index, digit },
+          shouldCommit: prop('shouldToggleNoteHighlight'),
+          onCommit: prop('onToggleNoteHighlight'),
+        })
       },
-      clearCellNotes({ context, event, refs, prop }) {
+      clearCellNotes({ context, event, computed, refs, prop }) {
         const { index } = event
         const notes = context.get('notes')
         const highlights = context.get('highlights')
         if (notes[index].length === 0 && Object.keys(highlights[index]).length === 0) return
         commit(
-          { context, refs, prop },
+          { context, refs, prop, computed },
           {
             notes: withCell(notes, index, []),
             highlights: withCell(highlights, index, {}),
             notesInitialized: withCell(context.get('notesInitialized'), index, false),
           },
+          { data: { index }, shouldCommit: prop('shouldClearCellNotes'), onCommit: prop('onClearCellNotes') },
         )
       },
       autoSolveCell({ context, event, computed, refs, prop }) {
@@ -597,7 +684,11 @@ export const machine = createMachine<SudokuSchema>({
         if (context.get('values')[index] != null) return
         const digit = computed('singleCandidate')[index]
         if (digit == null) return
-        commitValue({ context, refs, prop, computed }, index, digit)
+        commitValue({ context, refs, prop, computed }, index, digit, {
+          data: { index },
+          shouldCommit: prop('shouldAutoSolveCell'),
+          onCommit: prop('onAutoSolveCell'),
+        })
       },
       autoNoteGrid({ context, computed, refs, prop }) {
         const notes = context.get('notes')
@@ -614,28 +705,43 @@ export const machine = createMachine<SudokuSchema>({
         })
         const nextNotesInitialized = notesInitialized.map((flag, i) => (given[i] || values[i] != null ? flag : true))
 
-        commit({ context, refs, prop }, { notes: nextNotes, notesInitialized: nextNotesInitialized })
-      },
-      clearAllNotesGrid({ context, refs, prop }) {
         commit(
-          { context, refs, prop },
+          { context, refs, prop, computed },
+          { notes: nextNotes, notesInitialized: nextNotesInitialized },
+          { data: undefined, shouldCommit: prop('shouldAutoNote'), onCommit: prop('onAutoNote') },
+        )
+      },
+      clearAllNotesGrid({ context, computed, refs, prop }) {
+        commit(
+          { context, refs, prop, computed },
           {
             notes: context.get('notes').map(() => [] as number[]),
             highlights: context.get('highlights').map(() => ({}) as Record<number, SudokuHighlightKind>),
             notesInitialized: context.get('notesInitialized').map(() => false),
             hiddenCells: context.get('hiddenCells').map(() => null),
           },
+          { data: undefined, shouldCommit: prop('shouldClearAllNotes'), onCommit: prop('onClearAllNotes') },
         )
       },
-      setHighlightMode({ context, event }) {
+      setHighlightMode({ context, event, computed, prop }) {
+        const data = { mode: event.mode }
+        const prevState = buildStateSnapshot({ context, computed, prop })
+        if (prop('shouldSetHighlightMode')?.({ data, state: prevState }) === false) return
         context.set('highlightMode', event.mode)
+        prop('onSetHighlightMode')?.({ data, prevState })
       },
-      setNoteMode({ context, event }) {
+      setNoteMode({ context, event, computed, prop }) {
+        const data = { enabled: event.enabled }
+        const prevState = buildStateSnapshot({ context, computed, prop })
+        if (prop('shouldSetNoteMode')?.({ data, state: prevState }) === false) return
         context.set('noteMode', event.enabled)
+        prop('onSetNoteMode')?.({ data, prevState })
       },
-      undo({ context, refs }) {
+      undo({ context, refs, computed, prop }) {
         const past = refs.get('past')
         if (past.length === 0) return
+        const prevState = buildStateSnapshot({ context, computed, prop })
+        if (prop('shouldUndo')?.({ data: undefined, state: prevState }) === false) return
         const previous = past[past.length - 1]
         const current = snapshot({ context })
         refs.set('past', past.slice(0, -1))
@@ -647,10 +753,13 @@ export const machine = createMachine<SudokuSchema>({
         context.set('hiddenCells', previous.hiddenCells)
         context.set('noteMode', previous.noteMode)
         context.set('highlightMode', previous.highlightMode)
+        prop('onUndo')?.({ data: undefined, prevState })
       },
-      redo({ context, refs }) {
+      redo({ context, refs, computed, prop }) {
         const future = refs.get('future')
         if (future.length === 0) return
+        const prevState = buildStateSnapshot({ context, computed, prop })
+        if (prop('shouldRedo')?.({ data: undefined, state: prevState }) === false) return
         const next = future[future.length - 1]
         const current = snapshot({ context })
         refs.set('future', future.slice(0, -1))
@@ -662,6 +771,7 @@ export const machine = createMachine<SudokuSchema>({
         context.set('hiddenCells', next.hiddenCells)
         context.set('noteMode', next.noteMode)
         context.set('highlightMode', next.highlightMode)
+        prop('onRedo')?.({ data: undefined, prevState })
       },
       notifySolvedChange({ prop, computed }) {
         prop('onSolvedChange')?.(computed('solved'))

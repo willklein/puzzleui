@@ -4,6 +4,7 @@ import {
   SUDOKU_4X4,
   SUDOKU_6X6,
   SUDOKU_9X9,
+  useSudoku,
   type SudokuHighlightKind,
   type SudokuLayout,
   type SudokuProps,
@@ -210,5 +211,54 @@ export const Solved: Story = {
     layout: SUDOKU_9X9,
     givens: NINE_BY_NINE,
     defaultValue: NINE_BY_NINE_SOLVED,
+  },
+}
+
+/**
+ * A `shouldSetValue` guard rejects any digit that doesn't match the known solution — wrong
+ * entries are silently blocked (no value change, no history entry) rather than committed and
+ * left to show as a conflict. `onSetValue` logs every attempt that *does* commit.
+ */
+export const StrictMode: Story = {
+  render: () => (
+    <Sudoku.Root
+      className="sudoku"
+      layout={SUDOKU_9X9}
+      givens={NINE_BY_NINE}
+      solution={NINE_BY_NINE_SOLVED}
+      shouldSetValue={({ data }) => data.digit == null || data.digit === NINE_BY_NINE_SOLVED[data.index]}
+      onSetValue={({ data }) => console.log('committed', data.digit, 'at cell', data.index)}
+    >
+      <Sudoku.Toolbar />
+      <Sudoku.SolvedIndicator className="sudoku-solved" fallback={<span>Keep going…</span>}>
+        Solved!
+      </Sudoku.SolvedIndicator>
+    </Sudoku.Root>
+  ),
+}
+
+/**
+ * `useSudoku()` called outside `Sudoku.Root`, then handed to it via the `model` prop — the
+ * external "filled" counter and the grid both read the same live state.
+ */
+export const ModelSharing: Story = {
+  render: () => {
+    function Demo() {
+      const sudoku = useSudoku({ layout: SUDOKU_9X9, givens: NINE_BY_NINE })
+      const filled = sudoku.values.filter((v) => v != null).length
+      const total = sudoku.layout.size * sudoku.layout.size
+
+      return (
+        <div>
+          <p>
+            {filled} / {total} filled
+          </p>
+          <Sudoku.Root className="sudoku" model={sudoku}>
+            <Sudoku.Toolbar />
+          </Sudoku.Root>
+        </div>
+      )
+    }
+    return <Demo />
   },
 }

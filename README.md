@@ -198,6 +198,30 @@ import { Sudoku, SUDOKU_6X6 } from './lib/sudoku'
 ;<Sudoku.Root layout={SUDOKU_6X6} givens={sixBySixGivens} />
 ```
 
+Build state with `useSudoku()` outside `Sudoku.Root`'s own subtree, then hand it to `Root` via the `model`
+prop — `Root` uses it instead of building its own, so it can be read/driven from anywhere, e.g. an external
+progress readout:
+
+```tsx
+import { Sudoku, useSudoku, SUDOKU_9X9 } from './lib/sudoku'
+
+function Puzzle() {
+  const sudoku = useSudoku({ layout: SUDOKU_9X9, givens })
+  const filled = sudoku.values.filter((v) => v != null).length
+
+  return (
+    <>
+      <p>
+        {filled} / {sudoku.layout.size * sudoku.layout.size} filled
+      </p>
+      <Sudoku.Root model={sudoku}>
+        <Sudoku.Toolbar />
+      </Sudoku.Root>
+    </>
+  )
+}
+```
+
 **Anatomy**
 
 | Part                         | Description                                                                                                                 |
@@ -227,21 +251,59 @@ import { Sudoku, SUDOKU_6X6 } from './lib/sudoku'
 
 **`Sudoku.Root` props**
 
-| Prop                                                               | Type                                                    | Default      | Description                                                                                                                    |
-| ------------------------------------------------------------------ | ------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `layout`                                                           | `{ size: number; boxWidth: number; boxHeight: number }` | `SUDOKU_9X9` | The grid shape. `boxWidth * boxHeight` must equal `size`.                                                                      |
-| `givens`                                                           | `Array<number \| null>`                                 | —            | The puzzle's fixed clues, flat-indexed `row * size + col`. `null` marks an empty cell. Required, length `size * size`.         |
-| `value` / `defaultValue` / `onValueChange`                         | `Array<number \| null>`                                 | —            | Controlled/uncontrolled per-cell committed digits (given + player-entered).                                                    |
-| `notes` / `defaultNotes` / `onNotesChange`                         | `number[][]`                                            | —            | Controlled/uncontrolled per-cell candidate notes.                                                                              |
-| `highlights` / `defaultHighlights` / `onHighlightsChange`          | `Array<Record<number, 'box' \| 'row' \| 'col'>>`        | —            | Controlled/uncontrolled per-cell note highlights.                                                                              |
-| `noteMode` / `defaultNoteMode` / `onNoteModeChange`                | `boolean`                                               | `false`      | Whether digit keys toggle notes instead of setting the value.                                                                  |
-| `highlightMode` / `defaultHighlightMode` / `onHighlightModeChange` | `'box' \| 'row' \| 'col'`                               | `'box'`      | Which kind newly-marked highlights get.                                                                                        |
-| `autoSolveOnClick`                                                 | `boolean`                                               | `true`       | Whether clicking a cell with exactly one remaining candidate immediately commits it.                                           |
-| `solution`                                                         | `Array<number \| null>`                                 | —            | An optional known-correct grid to validate against. Not required — `solved` otherwise self-verifies (complete + no conflicts). |
-| `maxHistoryLength`                                                 | `number`                                                | `200`        | Maximum undo/redo stack depth.                                                                                                 |
-| `disabled`                                                         | `boolean`                                               | —            | Disables interaction with every cell.                                                                                          |
-| `onSolvedChange`                                                   | `(solved: boolean) => void`                             | —            | Called whenever `solved` changes.                                                                                              |
-| `id`                                                               | `string`                                                | —            | Base id used to derive part ids.                                                                                               |
+| Prop                                                               | Type                                                    | Default      | Description                                                                                                                                                                                                       |
+| ------------------------------------------------------------------ | ------------------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `layout`                                                           | `{ size: number; boxWidth: number; boxHeight: number }` | `SUDOKU_9X9` | The grid shape. `boxWidth * boxHeight` must equal `size`.                                                                                                                                                         |
+| `givens`                                                           | `Array<number \| null>`                                 | —            | The puzzle's fixed clues, flat-indexed `row * size + col`. `null` marks an empty cell. Required, length `size * size` — unless `model` is supplied, in which case it's ignored.                                   |
+| `model`                                                            | `UseSudokuReturn`                                       | —            | A pre-built `useSudoku()` instance to use instead of building one from the other props (which are then ignored). Lets state be read/driven from outside this subtree, or shared across multiple places in a page. |
+| `renderGrid`                                                       | `boolean`                                               | `true`       | Whether to auto-render `Sudoku.Grid`. Set `false` to supply your own cell rendering via `children` instead.                                                                                                       |
+| `value` / `defaultValue` / `onValueChange`                         | `Array<number \| null>`                                 | —            | Controlled/uncontrolled per-cell committed digits (given + player-entered).                                                                                                                                       |
+| `notes` / `defaultNotes` / `onNotesChange`                         | `number[][]`                                            | —            | Controlled/uncontrolled per-cell candidate notes.                                                                                                                                                                 |
+| `highlights` / `defaultHighlights` / `onHighlightsChange`          | `Array<Record<number, 'box' \| 'row' \| 'col'>>`        | —            | Controlled/uncontrolled per-cell note highlights.                                                                                                                                                                 |
+| `noteMode` / `defaultNoteMode` / `onNoteModeChange`                | `boolean`                                               | `false`      | Whether digit keys toggle notes instead of setting the value.                                                                                                                                                     |
+| `highlightMode` / `defaultHighlightMode` / `onHighlightModeChange` | `'box' \| 'row' \| 'col'`                               | `'box'`      | Which kind newly-marked highlights get.                                                                                                                                                                           |
+| `autoSolveOnClick`                                                 | `boolean`                                               | `true`       | Whether clicking a cell with exactly one remaining candidate immediately commits it.                                                                                                                              |
+| `solution`                                                         | `Array<number \| null>`                                 | —            | An optional known-correct grid to validate against. Not required — `solved` otherwise self-verifies (complete + no conflicts).                                                                                    |
+| `maxHistoryLength`                                                 | `number`                                                | `200`        | Maximum undo/redo stack depth.                                                                                                                                                                                    |
+| `disabled`                                                         | `boolean`                                               | —            | Disables interaction with every cell.                                                                                                                                                                             |
+| `onSolvedChange`                                                   | `(solved: boolean) => void`                             | —            | Called whenever `solved` changes.                                                                                                                                                                                 |
+| `id`                                                               | `string`                                                | —            | Base id used to derive part ids.                                                                                                                                                                                  |
+
+**`Sudoku.Root` guards & callbacks**
+
+Every mutating event has a matching `should*`/`on*` pair, distinct from the `on*Change` props above: an
+`on*Change` prop fires whenever a value actually _differs_ (including from external controlled-prop changes)
+and receives the new value directly, while these fire whenever the event is _attempted_ and receive
+`{ data, state }` (guard) or `{ data, prevState }` (callback) — `state`/`prevState` is a full snapshot of
+every readable `Api` field as it stood immediately before. Only a `should*` guard can veto an attempt (return
+`false`) before it happens; an `on*Change` prop cannot.
+
+| Event pair                                            | `data`                             | Fires on                                                                                             |
+| ----------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `shouldSetValue` / `onSetValue`                       | `{ index, digit: number \| null }` | Committing/clearing a cell — `setValue()`, digit key, Backspace, click auto-solve.                   |
+| `shouldToggleNote` / `onToggleNote`                   | `{ index, digit }`                 | Toggling a plain candidate note.                                                                     |
+| `shouldToggleNoteHighlight` / `onToggleNoteHighlight` | `{ index, digit }`                 | Toggling/re-tagging a note's highlight.                                                              |
+| `shouldClearCellNotes` / `onClearCellNotes`           | `{ index }`                        | Clearing one cell's notes.                                                                           |
+| `shouldAutoSolveCell` / `onAutoSolveCell`             | `{ index }`                        | Committing via `autoSolveCell()`/click. `digit` is derivable as `state.singleCandidate[data.index]`. |
+| `shouldAutoNote` / `onAutoNote`                       | `undefined`                        | Bulk-filling every cell's notes via `autoNote()`.                                                    |
+| `shouldClearAllNotes` / `onClearAllNotes`             | `undefined`                        | Clearing every cell's notes grid-wide.                                                               |
+| `shouldSetHighlightMode` / `onSetHighlightMode`       | `{ mode }`                         | Changing `highlightMode`.                                                                            |
+| `shouldSetNoteMode` / `onSetNoteMode`                 | `{ enabled }`                      | Changing `noteMode`.                                                                                 |
+| `shouldUndo` / `onUndo`                               | `undefined`                        | Calling `undo()`.                                                                                    |
+| `shouldRedo` / `onRedo`                               | `undefined`                        | Calling `redo()`.                                                                                    |
+
+```tsx
+// A "strict mode" that blocks committing a digit that doesn't match a known solution.
+<Sudoku.Root
+  layout={SUDOKU_9X9}
+  givens={givens}
+  solution={solution}
+  shouldSetValue={({ data }) => data.digit == null || data.digit === solution[data.index]}
+  onSetValue={({ data }) => console.log('committed', data.digit, 'at', data.index)}
+>
+  <Sudoku.Toolbar />
+</Sudoku.Root>
+```
 
 **`Sudoku.Cell` props**: `index: number` (flat-indexed `row * size + col`).
 

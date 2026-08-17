@@ -52,6 +52,64 @@ export interface SudokuHistorySnapshot {
   highlightMode: SudokuHighlightKind
 }
 
+/**
+ * A full readable snapshot of `SudokuApi`'s state fields, passed to every guard (as `state`,
+ * taken immediately before the attempted mutation) and callback (as `prevState`, the same
+ * snapshot — the state as it was right before the mutation that just happened).
+ */
+export interface SudokuStateSnapshot {
+  layout: ResolvedSudokuLayout
+  values: Array<number | null>
+  given: boolean[]
+  notes: number[][]
+  highlights: Array<Record<number, SudokuHighlightKind>>
+  notesInitialized: boolean[]
+  activePairs: SudokuActivePair[]
+  eliminated: number[][]
+  remainingCandidates: number[][]
+  singleCandidate: Array<number | null>
+  conflicts: boolean[]
+  complete: boolean
+  solved: boolean
+  disabled: boolean
+  focusedIndex: number
+  noteMode: boolean
+  highlightMode: SudokuHighlightKind
+  canUndo: boolean
+  canRedo: boolean
+}
+
+/** Checked before an event's mutation is applied. Return `false` to veto it (no state change, no matching `on*` callback). Any other return value (including none) allows it. */
+export type SudokuGuard<TData> = (params: { data: TData; state: SudokuStateSnapshot }) => boolean | void
+/** Called after an event's mutation has been applied, with the state as it was immediately before. */
+export type SudokuCallback<TData> = (params: { data: TData; prevState: SudokuStateSnapshot }) => void
+
+export interface SudokuSetValueData {
+  index: number
+  digit: number | null
+}
+export interface SudokuToggleNoteData {
+  index: number
+  digit: number
+}
+export interface SudokuToggleNoteHighlightData {
+  index: number
+  digit: number
+}
+export interface SudokuClearCellNotesData {
+  index: number
+}
+/** `digit` is derivable as `state.singleCandidate[data.index]`. */
+export interface SudokuAutoSolveCellData {
+  index: number
+}
+export interface SudokuSetHighlightModeData {
+  mode: SudokuHighlightKind
+}
+export interface SudokuSetNoteModeData {
+  enabled: boolean
+}
+
 export interface SudokuProps {
   /** The grid's shape. @default SUDOKU_9X9 */
   layout?: SudokuLayout | undefined
@@ -91,6 +149,36 @@ export interface SudokuProps {
   onNoteModeChange?: ((noteMode: boolean) => void) | undefined
   onHighlightModeChange?: ((highlightMode: SudokuHighlightKind) => void) | undefined
   onSolvedChange?: ((solved: boolean) => void) | undefined
+
+  /**
+   * Guards and callbacks for individual events, distinct from the `on*Change` props above:
+   * an `on*Change` prop fires whenever a value actually *differs* (including from external
+   * controlled-prop changes), while these fire whenever the matching event is *attempted* —
+   * only a `should*` guard can veto an attempt before it happens. See the docs for the full
+   * `onSetValue` vs `onValueChange` example.
+   */
+  shouldSetValue?: SudokuGuard<SudokuSetValueData> | undefined
+  onSetValue?: SudokuCallback<SudokuSetValueData> | undefined
+  shouldToggleNote?: SudokuGuard<SudokuToggleNoteData> | undefined
+  onToggleNote?: SudokuCallback<SudokuToggleNoteData> | undefined
+  shouldToggleNoteHighlight?: SudokuGuard<SudokuToggleNoteHighlightData> | undefined
+  onToggleNoteHighlight?: SudokuCallback<SudokuToggleNoteHighlightData> | undefined
+  shouldClearCellNotes?: SudokuGuard<SudokuClearCellNotesData> | undefined
+  onClearCellNotes?: SudokuCallback<SudokuClearCellNotesData> | undefined
+  shouldAutoSolveCell?: SudokuGuard<SudokuAutoSolveCellData> | undefined
+  onAutoSolveCell?: SudokuCallback<SudokuAutoSolveCellData> | undefined
+  shouldAutoNote?: SudokuGuard<undefined> | undefined
+  onAutoNote?: SudokuCallback<undefined> | undefined
+  shouldClearAllNotes?: SudokuGuard<undefined> | undefined
+  onClearAllNotes?: SudokuCallback<undefined> | undefined
+  shouldSetHighlightMode?: SudokuGuard<SudokuSetHighlightModeData> | undefined
+  onSetHighlightMode?: SudokuCallback<SudokuSetHighlightModeData> | undefined
+  shouldSetNoteMode?: SudokuGuard<SudokuSetNoteModeData> | undefined
+  onSetNoteMode?: SudokuCallback<SudokuSetNoteModeData> | undefined
+  shouldUndo?: SudokuGuard<undefined> | undefined
+  onUndo?: SudokuCallback<undefined> | undefined
+  shouldRedo?: SudokuGuard<undefined> | undefined
+  onRedo?: SudokuCallback<undefined> | undefined
 }
 
 export interface SudokuSchema {
@@ -158,29 +246,7 @@ export interface SudokuSchema {
 export type SudokuService = Service<SudokuSchema>
 export type SudokuMachine = Machine<SudokuSchema>
 
-export interface SudokuApi<T extends PropTypes = PropTypes> {
-  layout: ResolvedSudokuLayout
-  values: Array<number | null>
-  given: boolean[]
-  notes: number[][]
-  highlights: Array<Record<number, SudokuHighlightKind>>
-  /** Per cell, whether its notes were last (re)established via `autoNote()` — see `singleCandidate`. */
-  notesInitialized: boolean[]
-  /** Currently-confirmed box/row/col pairs, derived from `highlights`. */
-  activePairs: SudokuActivePair[]
-  eliminated: number[][]
-  remainingCandidates: number[][]
-  singleCandidate: Array<number | null>
-  conflicts: boolean[]
-  complete: boolean
-  solved: boolean
-  disabled: boolean
-  focusedIndex: number
-  noteMode: boolean
-  highlightMode: SudokuHighlightKind
-  canUndo: boolean
-  canRedo: boolean
-
+export interface SudokuApi<T extends PropTypes = PropTypes> extends SudokuStateSnapshot {
   /** Commits `digit` (or clears with `null`) into cell `index`. No-ops on a given cell. */
   setValue: (index: number, digit: number | null) => void
   /** Toggles a plain candidate note. No-ops on a given or already-valued cell. */

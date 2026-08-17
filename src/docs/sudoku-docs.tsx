@@ -38,6 +38,44 @@ const USAGE_TOOLBAR = `// A ready-made control strip: notes-mode toggle, box/row
   <Sudoku.RedoTrigger />
 </Sudoku.Root>`
 
+const USAGE_MODEL = `// Build state with useSudoku() outside Sudoku.Root's own subtree, then hand it
+// to Root via the \`model\` prop — Root uses it instead of building its own, so
+// it can be read/driven from anywhere, e.g. an external progress readout.
+import { Sudoku, useSudoku, SUDOKU_9X9 } from './lib/sudoku'
+
+function Puzzle() {
+  const sudoku = useSudoku({ layout: SUDOKU_9X9, givens })
+  const filled = sudoku.values.filter((v) => v != null).length
+
+  return (
+    <>
+      <p>{filled} / {sudoku.layout.size * sudoku.layout.size} filled</p>
+      <Sudoku.Root model={sudoku}>
+        <Sudoku.Toolbar />
+      </Sudoku.Root>
+    </>
+  )
+}
+
+// renderGrid={false} opts out of Root's automatic <Sudoku.Grid />, e.g. to
+// fully customize per-cell rendering via children instead.
+<Sudoku.Root layout={SUDOKU_9X9} givens={givens} renderGrid={false}>
+  {/* your own cell rendering, reading from useSudokuContext() */}
+</Sudoku.Root>`
+
+const USAGE_GUARDS = `// shouldEventName guards run first and can veto an attempt (return false) before
+// anything changes; onEventName callbacks fire after, with the state as it was
+// immediately before. Together they cover what on*Change props can't: vetoing.
+<Sudoku.Root
+  layout={SUDOKU_9X9}
+  givens={givens}
+  solution={solution}
+  shouldSetValue={({ data, state }) => solution[data.index] == null || data.digit === solution[data.index]}
+  onSetValue={({ data }) => console.log('committed', data.digit, 'at', data.index)}
+>
+  <Sudoku.Toolbar />
+</Sudoku.Root>`
+
 export function SudokuDocs() {
   return (
     <section className="docs-section">
@@ -135,7 +173,20 @@ export function SudokuDocs() {
             name: 'givens',
             type: 'Array<number | null>',
             description:
-              "The puzzle's fixed clues, flat-indexed row * size + col. null marks an empty cell. Required, length size * size.",
+              "The puzzle's fixed clues, flat-indexed row * size + col. null marks an empty cell. Required, length size * size — unless model is supplied, in which case it's ignored.",
+          },
+          {
+            name: 'model',
+            type: 'UseSudokuReturn',
+            description:
+              'A pre-built useSudoku() instance to use instead of building one from the other props (which are then ignored). Lets state be read/driven from outside this subtree, or shared across multiple places in a page.',
+          },
+          {
+            name: 'renderGrid',
+            type: 'boolean',
+            description:
+              'Whether to auto-render Sudoku.Grid. Set to false to supply your own cell rendering via children instead.',
+            default: 'true',
           },
           {
             name: 'value / defaultValue / onValueChange',
@@ -185,6 +236,70 @@ export function SudokuDocs() {
             description: 'Called whenever `solved` changes.',
           },
           { name: 'id', type: 'string', description: 'Base id used to derive part ids.' },
+        ]}
+      />
+
+      <h3>Sudoku.Root guards &amp; callbacks</h3>
+      <p className="docs-note">
+        Every mutating event has a matching <code>should*</code>/<code>on*</code> pair, distinct from the{' '}
+        <code>on*Change</code> props above: an <code>on*Change</code> prop fires whenever a value actually{' '}
+        <em>differs</em> (including from external controlled-prop changes) and receives the new value directly, while
+        these fire whenever the event is <em>attempted</em> and receive <code>{'{ data, state }'}</code> (guard) or{' '}
+        <code>{'{ data, prevState }'}</code> (callback) — <code>state</code>/<code>prevState</code> is a full snapshot
+        of every readable Api field as it stood immediately before. Only a <code>should*</code> guard can veto an
+        attempt (return <code>false</code>) before it happens; an <code>on*Change</code> prop cannot.
+      </p>
+      <PropsTable
+        rows={[
+          {
+            name: 'shouldSetValue / onSetValue',
+            type: '{ index: number; digit: number | null }',
+            description:
+              'Committing (or clearing) a cell — via setValue(), a digit key, Backspace, or click auto-solve.',
+          },
+          {
+            name: 'shouldToggleNote / onToggleNote',
+            type: '{ index: number; digit: number }',
+            description: 'Toggling a plain candidate note.',
+          },
+          {
+            name: 'shouldToggleNoteHighlight / onToggleNoteHighlight',
+            type: '{ index: number; digit: number }',
+            description: "Toggling/re-tagging a note's highlight.",
+          },
+          {
+            name: 'shouldClearCellNotes / onClearCellNotes',
+            type: '{ index: number }',
+            description: "Clearing one cell's notes.",
+          },
+          {
+            name: 'shouldAutoSolveCell / onAutoSolveCell',
+            type: '{ index: number }',
+            description:
+              'Committing a cell via autoSolveCell()/click. digit is derivable as state.singleCandidate[data.index].',
+          },
+          {
+            name: 'shouldAutoNote / onAutoNote',
+            type: 'undefined',
+            description: 'Bulk-filling every cell’s notes via autoNote().',
+          },
+          {
+            name: 'shouldClearAllNotes / onClearAllNotes',
+            type: 'undefined',
+            description: 'Clearing every cell’s notes grid-wide.',
+          },
+          {
+            name: 'shouldSetHighlightMode / onSetHighlightMode',
+            type: '{ mode: SudokuHighlightKind }',
+            description: 'Changing highlightMode.',
+          },
+          {
+            name: 'shouldSetNoteMode / onSetNoteMode',
+            type: '{ enabled: boolean }',
+            description: 'Changing noteMode.',
+          },
+          { name: 'shouldUndo / onUndo', type: 'undefined', description: 'Calling undo().' },
+          { name: 'shouldRedo / onRedo', type: 'undefined', description: 'Calling redo().' },
         ]}
       />
 
@@ -238,6 +353,8 @@ export function SudokuDocs() {
       <CodeBlock code={USAGE_ROOT} />
       <CodeBlock code={USAGE_LAYOUT} />
       <CodeBlock code={USAGE_TOOLBAR} />
+      <CodeBlock code={USAGE_MODEL} />
+      <CodeBlock code={USAGE_GUARDS} />
     </section>
   )
 }
