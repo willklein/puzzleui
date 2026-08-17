@@ -66,6 +66,8 @@ export interface SudokuStateSnapshot {
   notesInitialized: boolean[]
   activePairs: SudokuActivePair[]
   eliminated: number[][]
+  /** Per cell, which of its own notes are "scarce": at most 2 cells in that cell's unit of `highlightMode`'s kind (box/row/col) have that digit noted. A live count of `notes`, independent of `activePairs`/manual highlight marks. */
+  scarceNotes: number[][]
   remainingCandidates: number[][]
   singleCandidate: Array<number | null>
   conflicts: boolean[]
@@ -232,6 +234,8 @@ export interface SudokuSchema {
     activePairs: SudokuActivePair[]
     /** Per cell, digits ruled out by active pair propagation (independent of whether they're in `notes`). */
     eliminated: number[][]
+    /** Per cell, which of its own notes are "scarce" — see `SudokuStateSnapshot.scarceNotes`. */
+    scarceNotes: number[][]
     /** Per empty, non-given cell: digits not yet placed in its row/col/box and not eliminated. */
     remainingCandidates: number[][]
     /**

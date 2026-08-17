@@ -378,6 +378,13 @@ export function SudokuDocs() {
         highlight off immediately un-does its eliminations.
       </p>
 
+      <p className="docs-note">
+        Separately, any note whose digit appears at most twice within its own box, row, or column (whichever
+        <code>highlightMode</code> is currently active) renders brighter — a live count of <code>notes</code> itself,
+        independent of whether anything's been marked as a highlighted pair yet. It's a plain visual cue pointing out
+        pairs worth marking, and updates immediately as notes are added or cleared by any means.
+      </p>
+
       <h3>Usage</h3>
       <CodeBlock code={USAGE_ROOT} />
       <CodeBlock code={USAGE_LAYOUT} />

@@ -271,6 +271,35 @@ function getConflicts(values: Array<number | null>, layout: ResolvedSudokuLayout
   return conflicts
 }
 
+/**
+ * Per cell, which of its own notes are "scarce": within that cell's unit of `highlightMode`'s
+ * kind (box/row/col), at most 2 cells total have that digit noted. This is a live count of
+ * `notes` itself — unrelated to whether the player has manually marked a highlight pair — so it
+ * updates automatically as notes are added/cleared by any means (toggling, `autoNote()`,
+ * clearing, Backspace, ...). Scoped to the current `highlightMode` per requirement: box pairs
+ * when 'box' is selected, row pairs when 'row', column pairs when 'col'.
+ */
+function getScarceNotes(
+  notes: number[][],
+  highlightMode: SudokuHighlightKind,
+  layout: ResolvedSudokuLayout,
+): number[][] {
+  const unitCount = highlightMode === 'box' ? layout.boxesAcross * layout.boxesDown : layout.size
+  const countsByUnit: Array<Map<number, number>> = Array.from({ length: unitCount }, () => new Map())
+
+  notes.forEach((cellNotes, cell) => {
+    const unitIndex = unitIndexOf(cell, highlightMode, layout)
+    for (const digit of cellNotes) {
+      countsByUnit[unitIndex].set(digit, (countsByUnit[unitIndex].get(digit) ?? 0) + 1)
+    }
+  })
+
+  return notes.map((cellNotes, cell) => {
+    const unitIndex = unitIndexOf(cell, highlightMode, layout)
+    return cellNotes.filter((digit) => (countsByUnit[unitIndex].get(digit) ?? 0) <= 2)
+  })
+}
+
 // ---------------------------------------------------------------------------
 // History (undo/redo)
 // ---------------------------------------------------------------------------
@@ -303,6 +332,7 @@ function buildStateSnapshot({
     notesInitialized: context.get('notesInitialized'),
     activePairs: computed('activePairs'),
     eliminated: computed('eliminated'),
+    scarceNotes: computed('scarceNotes'),
     remainingCandidates: computed('remainingCandidates'),
     singleCandidate: computed('singleCandidate'),
     conflicts: computed('conflicts'),
@@ -588,6 +618,8 @@ export const machine = createMachine<SudokuSchema>({
     singleCandidate: ({ context, computed }) =>
       getSingleCandidate(computed('remainingCandidates'), context.get('notes'), context.get('notesInitialized')),
     conflicts: ({ context, computed }) => getConflicts(context.get('values'), computed('layout')),
+    scarceNotes: ({ context, computed }) =>
+      getScarceNotes(context.get('notes'), context.get('highlightMode'), computed('layout')),
     complete: ({ context }) => context.get('values').every((value) => value != null),
     solved: ({ context, computed, prop }) => {
       if (!computed('complete')) return false

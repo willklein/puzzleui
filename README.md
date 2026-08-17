@@ -340,6 +340,11 @@ there too. This mirrors two real solving techniques: pointing pairs (box → row
 undoes its eliminations. There's also a separate, general undo/redo history covering every mutating action
 (`Sudoku.Root`'s API exposes `undo()`/`redo()`/`canUndo`/`canRedo`), not just note pairs.
 
+Separately, any note whose digit appears at most twice within its own box, row, or column (whichever
+`highlightMode` is currently active) renders brighter — a live count of `notes` itself, independent of
+whether anything's been marked as a highlighted pair yet. It's a plain visual cue pointing out pairs worth
+marking, and updates immediately as notes are added or cleared by any means.
+
 The bundled example (`src/examples/sudoku-example.tsx`) offers 9×9/6×6/4×4 preset puzzles with a toolbar for
 notes mode, highlight mode, auto-note, and undo/redo.
 

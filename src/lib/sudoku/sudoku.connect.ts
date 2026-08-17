@@ -38,6 +38,7 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
   const notesInitialized = context.get('notesInitialized')
   const activePairs = computed('activePairs')
   const eliminated = computed('eliminated')
+  const scarceNotes = computed('scarceNotes')
   const remainingCandidates = computed('remainingCandidates')
   const singleCandidate = computed('singleCandidate')
   const conflicts = computed('conflicts')
@@ -61,6 +62,7 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
     notesInitialized,
     activePairs,
     eliminated,
+    scarceNotes,
     remainingCandidates,
     singleCandidate,
     conflicts,
@@ -264,6 +266,7 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
       const hasNote = notes[index].includes(digit)
       const highlightKind: SudokuHighlightKind | undefined = highlights[index][digit]
       const isEliminated = hasNote && eliminated[index].includes(digit)
+      const isScarce = hasNote && scarceNotes[index].includes(digit)
 
       return normalize.element({
         'data-scope': 'sudoku',
@@ -272,6 +275,7 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
         'data-visible': dataAttr(hasNote),
         'data-highlighted': highlightKind,
         'data-eliminated': dataAttr(isEliminated),
+        'data-scarce': dataAttr(isScarce),
       })
     },
 
