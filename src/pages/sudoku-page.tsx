@@ -161,6 +161,13 @@ export function SudokuPage() {
               type="button"
               className="sudoku-mobile-erase-trigger"
               disabled={!gridHasFocus}
+              // Same reasoning as the digit pad: a real tap starts with a native focus-shift on
+              // pointerdown, which blurs the grid before the click is even delivered — and this
+              // button re-renders as disabled the instant that blur sets gridHasFocus false,
+              // which makes the browser drop the pending click entirely (an element disabled
+              // between pointerdown and click never receives it). Keeping focus on the grid
+              // avoids the blur, the mid-gesture disable, and the dropped click all at once.
+              onPointerDown={(event) => event.preventDefault()}
               onClick={() => sudoku.setValue(focusedIndex, null)}
             >
               Erase
