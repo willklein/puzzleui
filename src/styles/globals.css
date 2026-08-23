@@ -916,7 +916,7 @@ body {
 [data-scope='sudoku'][data-part='clear-notes-trigger'],
 [data-scope='sudoku'][data-part='undo-trigger'],
 [data-scope='sudoku'][data-part='redo-trigger'],
-.sudoku-mobile-erase-trigger,
+[data-scope='sudoku'][data-part='erase-trigger'],
 .sudoku-preset-picker button {
   appearance: none;
   padding: 0.4rem 0.75rem;
@@ -941,7 +941,7 @@ body {
 [data-scope='sudoku'][data-part='clear-notes-trigger']:disabled,
 [data-scope='sudoku'][data-part='undo-trigger']:disabled,
 [data-scope='sudoku'][data-part='redo-trigger']:disabled,
-.sudoku-mobile-erase-trigger:disabled {
+[data-scope='sudoku'][data-part='erase-trigger']:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
