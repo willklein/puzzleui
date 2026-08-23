@@ -8,5 +8,6 @@ export { SudokuNoteModeToggle as NoteModeToggle } from './sudoku-note-mode-toggl
 export { SudokuHighlightModeToggle as HighlightModeToggle } from './sudoku-highlight-mode-toggle'
 export { SudokuAutoNoteTrigger as AutoNoteTrigger } from './sudoku-auto-note-trigger'
 export { SudokuClearNotesTrigger as ClearNotesTrigger } from './sudoku-clear-notes-trigger'
+export { SudokuEraseTrigger as EraseTrigger } from './sudoku-erase-trigger'
 export { SudokuUndoTrigger as UndoTrigger } from './sudoku-undo-trigger'
 export { SudokuRedoTrigger as RedoTrigger } from './sudoku-redo-trigger'

@@ -352,6 +352,32 @@ export function connect<T extends PropTypes>(service: SudokuService, normalize: 
       })
     },
 
+    getEraseTriggerProps() {
+      const targets = selectedIndices.length > 1 ? selectedIndices : [focusedIndex]
+      const nothingToErase = targets.every(
+        (index) => given[index] || (values[index] == null && notes[index].length === 0),
+      )
+      return normalize.button({
+        type: 'button',
+        'data-scope': 'sudoku',
+        'data-part': 'erase-trigger',
+        disabled: disabled || nothingToErase,
+        // Erase needs `focusedIndex` (and, via the machine's own multi-select fan-out, whatever
+        // else is in `selectedIndices`) to know what to clear — so it must not let a tap steal
+        // DOM focus off the grid. Left unguarded, a real tap's pointerdown blurs the grid before
+        // the click even fires, and if anything (a consumer's own UI) reacts to that blur by
+        // re-rendering this button disabled, the browser drops the pending click entirely, since
+        // an element disabled between pointerdown and click never receives it.
+        onPointerDown(event) {
+          event.preventDefault()
+        },
+        onClick() {
+          if (disabled) return
+          send({ type: 'CELL.SET_VALUE', index: focusedIndex, digit: null })
+        },
+      })
+    },
+
     getUndoTriggerProps() {
       return normalize.button({
         type: 'button',

@@ -116,10 +116,12 @@ export function SudokuPage() {
             const next = event.relatedTarget as HTMLElement | null
             if (event.currentTarget.contains(next)) return
             setGridHasFocus(false)
-            // A tap on a button (toolbar or digit pad) shouldn't collapse a selection that was
-            // just built to hand off to it — only "tapped elsewhere" should.
+            // A tap on a button (toolbar or digit pad) shouldn't collapse a selection or clear
+            // the armed digit that was just built up to hand off to it — only "tapped
+            // elsewhere" (outside cells and buttons) should reset both.
             if (!(next instanceof HTMLButtonElement)) {
               sudoku.selectCell(sudoku.focusedIndex)
+              setHighlightedDigit(null)
             }
           }}
         >
@@ -162,6 +164,7 @@ export function SudokuPage() {
             <Sudoku.HighlightModeToggle mode="row" />
             <Sudoku.HighlightModeToggle mode="col" />
             <Sudoku.AutoNoteTrigger />
+            <Sudoku.EraseTrigger />
             <div className="sudoku-mobile-undo-row">
               <Sudoku.UndoTrigger />
               {sudoku.canRedo && <Sudoku.RedoTrigger />}

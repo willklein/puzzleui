@@ -299,6 +299,8 @@ export interface SudokuApi<T extends PropTypes = PropTypes> extends SudokuStateS
   getHighlightModeToggleProps: (mode: SudokuHighlightKind) => T['button']
   getAutoNoteTriggerProps: () => T['button']
   getClearNotesTriggerProps: () => T['button']
+  /** Clears `focusedIndex`'s value (or notes, if it has no value) — the same effect as Backspace, exposed as a button for touch/no-keyboard use. Fans out across `selectedIndices` like every other cell-targeting action. */
+  getEraseTriggerProps: () => T['button']
   getUndoTriggerProps: () => T['button']
   getRedoTriggerProps: () => T['button']
 }

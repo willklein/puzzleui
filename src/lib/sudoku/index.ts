@@ -11,6 +11,7 @@ export { SudokuNoteModeToggle, type SudokuNoteModeToggleProps } from './sudoku-n
 export { SudokuHighlightModeToggle, type SudokuHighlightModeToggleProps } from './sudoku-highlight-mode-toggle'
 export { SudokuAutoNoteTrigger, type SudokuAutoNoteTriggerProps } from './sudoku-auto-note-trigger'
 export { SudokuClearNotesTrigger, type SudokuClearNotesTriggerProps } from './sudoku-clear-notes-trigger'
+export { SudokuEraseTrigger, type SudokuEraseTriggerProps } from './sudoku-erase-trigger'
 export { SudokuUndoTrigger, type SudokuUndoTriggerProps } from './sudoku-undo-trigger'
 export { SudokuRedoTrigger, type SudokuRedoTriggerProps } from './sudoku-redo-trigger'
 export {
