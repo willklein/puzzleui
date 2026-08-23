@@ -92,8 +92,15 @@ export function SudokuPage() {
 
   function handleDigitTap(digit: number) {
     if (gridHasFocus) {
-      if (sudoku.noteMode) sudoku.toggleNote(focusedIndex, digit)
-      else sudoku.setValue(focusedIndex, digit)
+      if (sudoku.noteMode) {
+        sudoku.toggleNote(focusedIndex, digit)
+        // A value entry already ends up highlighted via the focused cell's own value (the
+        // SudokuSameValueHighlight fallback); a note entry doesn't set a value, so nothing
+        // would otherwise highlight it — arm it explicitly, replacing whatever was armed.
+        setHighlightedDigit(digit)
+      } else {
+        sudoku.setValue(focusedIndex, digit)
+      }
     } else {
       setHighlightedDigit((current) => (current === digit ? null : digit))
     }
