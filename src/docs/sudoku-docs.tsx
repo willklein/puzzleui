@@ -147,6 +147,11 @@ export function SudokuDocs() {
           },
           { name: 'Sudoku.AutoNoteTrigger', description: 'Calls `autoNote()` on click.' },
           { name: 'Sudoku.ClearNotesTrigger', description: 'Calls `clearAllNotes()` on click.' },
+          {
+            name: 'Sudoku.EraseTrigger',
+            description:
+              'Clears the focused cell (or the whole selection) — value or notes, same as Backspace. Disabled when there’s nothing to erase.',
+          },
           { name: 'Sudoku.UndoTrigger', description: 'Calls `undo()` on click. Disabled when `canUndo` is false.' },
           { name: 'Sudoku.RedoTrigger', description: 'Calls `redo()` on click. Disabled when `canRedo` is false.' },
         ]}
@@ -364,8 +369,9 @@ export function SudokuDocs() {
 
       <p className="docs-note">
         <code>Sudoku.Toolbar</code> and its sub-parts (<code>NoteModeToggle</code>, <code>HighlightModeToggle</code>,{' '}
-        <code>AutoNoteTrigger</code>, <code>ClearNotesTrigger</code>, <code>UndoTrigger</code>, <code>RedoTrigger</code>
-        ) each render sensible default button text — pass <code>children</code> to any of them to override it.
+        <code>AutoNoteTrigger</code>, <code>ClearNotesTrigger</code>, <code>EraseTrigger</code>,{' '}
+        <code>UndoTrigger</code>, <code>RedoTrigger</code>) each render sensible default button text — pass{' '}
+        <code>children</code> to any of them to override it.
       </p>
 
       <p className="docs-note">

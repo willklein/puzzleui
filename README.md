@@ -236,6 +236,7 @@ function Puzzle() {
 | `Sudoku.HighlightModeToggle` | Sets `highlightMode` to its `mode` prop on click — one instance per kind (box/row/col).                                     |
 | `Sudoku.AutoNoteTrigger`     | Calls `autoNote()` on click.                                                                                                |
 | `Sudoku.ClearNotesTrigger`   | Calls `clearAllNotes()` on click.                                                                                           |
+| `Sudoku.EraseTrigger`        | Clears the focused cell (or selection) — value or notes, same as Backspace. Disabled when there's nothing to erase.         |
 | `Sudoku.UndoTrigger`         | Calls `undo()` on click. Disabled when `canUndo` is false.                                                                  |
 | `Sudoku.RedoTrigger`         | Calls `redo()` on click. Disabled when `canRedo` is false.                                                                  |
 
