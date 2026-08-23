@@ -115,11 +115,12 @@ export function SudokuPage() {
           onBlur={(event) => {
             const next = event.relatedTarget as HTMLElement | null
             if (event.currentTarget.contains(next)) return
-            setGridHasFocus(false)
-            // A tap on a button (toolbar or digit pad) shouldn't collapse a selection or clear
-            // the armed digit that was just built up to hand off to it — only "tapped
-            // elsewhere" (outside cells and buttons) should reset both.
+            // A tap on a button (toolbar or digit pad) shouldn't collapse a selection, clear the
+            // armed digit, or forget the grid has focus — a toolbar tap (Notes, a highlight-mode
+            // button, Undo, ...) is part of the same editing flow, not a "tapped elsewhere" that
+            // should reset any of this. Only a genuine tap outside cells and buttons should.
             if (!(next instanceof HTMLButtonElement)) {
+              setGridHasFocus(false)
               sudoku.selectCell(sudoku.focusedIndex)
               setHighlightedDigit(null)
             }
