@@ -25,6 +25,7 @@ interface SudokuMobileCellProps {
   index: number
   highlightedDigit: number | null
   onHighlightDigit: (digit: number | null) => void
+  gridHasFocus: boolean
 }
 
 /**
@@ -34,11 +35,12 @@ interface SudokuMobileCellProps {
  * directly from the public Api (`getCellProps`, `Sudoku.Note`) with a custom `onClick`:
  *   - a digit is "armed" (tapped on the pad while no cell was focused): place it directly, paint-style.
  *   - the cell already has a value: focus it and arm its digit, so its value is what's highlighted.
- *   - otherwise (an empty cell, no digit armed): fold it into a touch multi-selection.
+ *   - otherwise (an empty cell, no digit armed): extend the touch multi-selection being built by
+ *     consecutive taps if the grid already has focus, or start a fresh one otherwise.
  * The roving-tabindex focus-sync effect is copied from `sudoku-cell.tsx` — it's the one thing that
  * still has to run per cell for keyboard nav to keep working alongside the tap gesture.
  */
-function SudokuMobileCell({ sudoku, index, highlightedDigit, onHighlightDigit }: SudokuMobileCellProps) {
+function SudokuMobileCell({ sudoku, index, highlightedDigit, onHighlightDigit, gridHasFocus }: SudokuMobileCellProps) {
   const buttonRef = useRef<HTMLButtonElement>(null)
   const value = sudoku.values[index]
   const noteColumns = Math.ceil(Math.sqrt(sudoku.layout.size))
@@ -62,7 +64,14 @@ function SudokuMobileCell({ sudoku, index, highlightedDigit, onHighlightDigit }:
       onHighlightDigit(value)
       return
     }
-    sudoku.toggleSelected(index)
+    // Extend the selection being built by consecutive taps only while the grid already has
+    // focus (i.e. the immediately preceding action was another tap in this same session);
+    // otherwise start a fresh, single-cell one. Without this check, a tap right after a blur
+    // would extend the stale single-cell anchor `selectCell` leaves behind — indistinguishable,
+    // from `toggleSelected`'s perspective, from an in-progress multi-select — reselecting
+    // whatever was focused before the blur alongside the newly-tapped cell.
+    if (gridHasFocus) sudoku.toggleSelected(index)
+    else sudoku.selectCell(index)
   }
 
   return (
@@ -143,6 +152,7 @@ export function SudokuPage() {
                 index={index}
                 highlightedDigit={highlightedDigit}
                 onHighlightDigit={setHighlightedDigit}
+                gridHasFocus={gridHasFocus}
               />
             ))}
           </div>
