@@ -54,6 +54,18 @@ async function blurGrid(canvas: ReturnType<typeof within>, user: ReturnType<type
   await user.click(canvas.getByText('Keep going…'))
 }
 
+/**
+ * Whether a cell currently shows its selection ring — the `box-shadow` CSS rule keyed off
+ * `[data-focused]`/`[data-selected]`, suppressed only while `.sudoku-mobile-grid` isn't
+ * `:focus-within` (see globals.css). This is deliberately a *computed-style* check, not a
+ * `data-focused` attribute check: the attribute reflects the machine's own bookkeeping and can
+ * stay present even when the ring has visually disappeared, which is exactly the gap these
+ * tests are after.
+ */
+function hasSelectionRing(cell: HTMLElement) {
+  return getComputedStyle(cell).boxShadow !== 'none'
+}
+
 /** Baseline render, no interaction — the other stories all cover behavior via play functions. */
 export const Default: Story = {}
 
@@ -306,5 +318,44 @@ export const HidesFullyAndValidlyPlacedDigit: Story = {
 
     // an unrelated, not-yet-fully-placed digit stays selectable
     expect(canvas.getByRole('button', { name: '1' })).toBeInTheDocument()
+  },
+}
+
+/**
+ * 1) Select an unsolved (empty) cell, then toggle *into* Notes mode via the toolbar button —
+ * the cell's selection ring should stay visible. The toolbar's Notes toggle, unlike the digit
+ * pad, doesn't guard `onPointerDown` against stealing DOM focus, so a real tap on it moves
+ * focus off the grid — and the cell's ring is driven by `.sudoku-mobile-grid:focus-within` in
+ * CSS, not by the machine's `focusedIndex`/`data-focused` bookkeeping, which never changes here.
+ */
+export const SelectionRingSurvivesTogglingIntoNoteMode: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const user = userEvent.setup()
+    const grid = cells(canvas)
+
+    await blurGrid(canvas, user)
+    await user.click(grid[2]) // select an unsolved cell
+    expect(hasSelectionRing(grid[2])).toBe(true)
+
+    await user.click(canvas.getByRole('button', { name: 'Notes' }))
+    expect(hasSelectionRing(grid[2])).toBe(true)
+  },
+}
+
+/** 2) Same as 1, but toggling the other direction: start in Notes mode, select a cell, then toggle back to solve mode. */
+export const SelectionRingSurvivesTogglingOutOfNoteMode: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const user = userEvent.setup()
+    const grid = cells(canvas)
+
+    await blurGrid(canvas, user)
+    await user.click(canvas.getByRole('button', { name: 'Notes' }))
+    await user.click(grid[3]) // select an unsolved cell
+    expect(hasSelectionRing(grid[3])).toBe(true)
+
+    await user.click(canvas.getByRole('button', { name: 'Notes' })) // toggle back to solve mode
+    expect(hasSelectionRing(grid[3])).toBe(true)
   },
 }

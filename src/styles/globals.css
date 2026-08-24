@@ -979,10 +979,14 @@ body {
 
 /* The roving-tabindex ring (shared with [data-selected]) reflects the machine's own
    focusedIndex bookkeeping, which persists even once real DOM focus leaves the grid — but on
-   this touch-first page, "tapped away" should visibly mean no cell is active. :focus-within
-   tracks genuine browser focus, so this only suppresses the ring once focus has actually left,
-   without needing to keep it in sync with the gridHasFocus React state by hand. */
-.sudoku-mobile-grid:not(:focus-within) [data-scope='sudoku'][data-part='cell'][data-focused] {
+   this touch-first page, "tapped away" should visibly mean no cell is active. This used to key
+   off :focus-within instead of [data-has-focus], to track genuine browser focus without needing
+   to keep it in sync with the gridHasFocus React state by hand — but most toolbar buttons (the
+   digit pad and EraseTrigger are the exceptions) don't guard against a tap stealing DOM focus
+   off the grid, so :focus-within went false, and the ring vanished, on every toolbar tap
+   (Notes, a highlight-mode button, Undo, ...) even though gridHasFocus correctly stays true.
+   [data-has-focus] mirrors gridHasFocus exactly, so it isn't fooled by that. */
+.sudoku-mobile-grid:not([data-has-focus]) [data-scope='sudoku'][data-part='cell'][data-focused] {
   box-shadow: none;
 }
 
