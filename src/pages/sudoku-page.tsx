@@ -119,24 +119,42 @@ export function SudokuPage() {
   const eligibleDigits = canFilterDigits ? new Set(sudoku.remainingCandidates[focusedIndex]) : null
 
   function handleDigitTap(digit: number) {
+    // Tapping the already-armed digit again always just deselects it — regardless of whether a
+    // cell happens to be focused — rather than re-committing into that cell a second time. This
+    // has to be checked before the `gridHasFocus` branch below, or "unselect" would instead
+    // re-toggle whatever note was just placed with this digit.
+    if (highlightedDigit === digit) {
+      setHighlightedDigit(null)
+      return
+    }
     if (gridHasFocus) {
       // Committing into the focused cell targets that one cell, same as a direct cell tap —
       // it must not leave a selection session for the *next* empty-cell tap to extend into.
       selectionSessionRef.current = false
       if (sudoku.noteMode) sudoku.toggleNote(focusedIndex, digit)
       else sudoku.setValue(focusedIndex, digit)
-      // Arm the digit explicitly rather than relying on SudokuSameValueHighlight's
-      // focused-cell-value fallback: that fallback only holds up while focus stays on this
-      // exact cell, but moving to a different cell next (or moving focus away entirely) would
-      // silently drop the highlight even though the digit is still the one in play.
-      setHighlightedDigit(digit)
-    } else {
-      setHighlightedDigit((current) => (current === digit ? null : digit))
     }
+    // Arm the digit explicitly rather than relying on SudokuSameValueHighlight's
+    // focused-cell-value fallback: that fallback only holds up while focus stays on this
+    // exact cell, but moving to a different cell next (or moving focus away entirely) would
+    // silently drop the highlight even though the digit is still the one in play.
+    setHighlightedDigit(digit)
   }
 
   return (
-    <div className="sudoku-mobile-page">
+    <div
+      className="sudoku-mobile-page"
+      onClick={(event) => {
+        // The grid's own onBlur (below) clears an armed digit when a focused cell loses focus —
+        // but a digit armed straight from the pad, with no cell ever focused, has nothing to
+        // blur *from*, so that handler never fires for it. Catch that case here instead: a tap
+        // anywhere outside every button, while nothing is focused, also deselects the digit.
+        // Once a cell has focus, onBlur already owns this, so this only acts while it can't.
+        if (gridHasFocus || highlightedDigit == null) return
+        if ((event.target as HTMLElement).closest('button')) return
+        setHighlightedDigit(null)
+      }}
+    >
       <Sudoku.Root model={sudoku} renderGrid={false} className="sudoku sudoku-mobile">
         <div
           className="sudoku-mobile-grid"

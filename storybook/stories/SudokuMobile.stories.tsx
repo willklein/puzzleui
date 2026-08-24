@@ -164,3 +164,116 @@ export const CellFirstThenDigitThenSelectCells: Story = {
     expect(grid[7]).toHaveTextContent(digit!) // parity with the digit-first path: still armed, so it paints
   },
 }
+
+/**
+ * Clearing the active (armed) digit: all six stories below start from an explicitly blurred
+ * grid (see the module doc comment) and arm a digit via the pad first, matching "select a
+ * number" as a first action. The digit's own pad button carries `data-active` while armed —
+ * that's what every assertion here reads.
+ */
+
+/** 1) Tap an armed digit again (nothing else in between) — a plain toggle-off. */
+export const ClearActiveDigitByTappingItAgain: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const user = userEvent.setup()
+
+    await blurGrid(canvas, user)
+    const digitBtn = eligibleDigitButtons(canvas)[0]
+    await user.click(digitBtn) // arm
+    expect(digitBtn).toHaveAttribute('data-active')
+
+    await user.click(digitBtn) // tap again
+    expect(digitBtn).not.toHaveAttribute('data-active')
+  },
+}
+
+/** 2) Arm a digit, then click outside the puzzle and every button — should also clear it. */
+export const ClearActiveDigitByBlurring: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const user = userEvent.setup()
+
+    await blurGrid(canvas, user)
+    const digitBtn = eligibleDigitButtons(canvas)[0]
+    await user.click(digitBtn) // arm
+    expect(digitBtn).toHaveAttribute('data-active')
+
+    await blurGrid(canvas, user) // click outside again
+    expect(digitBtn).not.toHaveAttribute('data-active')
+  },
+}
+
+/** 3) Arm a digit, use it to place a note, then tap the same digit again to clear it. */
+export const ActiveDigitAfterNoteTapAgain: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const user = userEvent.setup()
+    const grid = cells(canvas)
+
+    await blurGrid(canvas, user)
+    await user.click(canvas.getByRole('button', { name: 'Notes' }))
+    const digitBtn = eligibleDigitButtons(canvas)[0]
+    await user.click(digitBtn) // arm
+    await user.click(grid[2]) // places a note in an empty cell using the armed digit
+    expect(digitBtn).toHaveAttribute('data-active')
+
+    await user.click(digitBtn) // tap the same digit again
+    expect(digitBtn).not.toHaveAttribute('data-active')
+  },
+}
+
+/** 4) Same as 3, but blurring (clicking outside) instead of tapping the digit again. */
+export const ActiveDigitAfterNoteBlur: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const user = userEvent.setup()
+    const grid = cells(canvas)
+
+    await blurGrid(canvas, user)
+    await user.click(canvas.getByRole('button', { name: 'Notes' }))
+    const digitBtn = eligibleDigitButtons(canvas)[0]
+    await user.click(digitBtn) // arm
+    await user.click(grid[3]) // places a note in an empty cell using the armed digit
+    expect(digitBtn).toHaveAttribute('data-active')
+
+    await blurGrid(canvas, user)
+    expect(digitBtn).not.toHaveAttribute('data-active')
+  },
+}
+
+/** 5) Same as 3, but entering a solved value instead of a note. */
+export const ActiveDigitAfterSolutionTapAgain: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const user = userEvent.setup()
+    const grid = cells(canvas)
+
+    await blurGrid(canvas, user)
+    const digitBtn = eligibleDigitButtons(canvas)[0]
+    await user.click(digitBtn) // arm
+    await user.click(grid[5]) // solves an empty cell with the armed digit
+    expect(digitBtn).toHaveAttribute('data-active')
+
+    await user.click(digitBtn) // tap the same digit again
+    expect(digitBtn).not.toHaveAttribute('data-active')
+  },
+}
+
+/** 6) Same as 5, but blurring (clicking outside) instead of tapping the digit again. */
+export const ActiveDigitAfterSolutionBlur: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const user = userEvent.setup()
+    const grid = cells(canvas)
+
+    await blurGrid(canvas, user)
+    const digitBtn = eligibleDigitButtons(canvas)[0]
+    await user.click(digitBtn) // arm
+    await user.click(grid[6]) // solves an empty cell with the armed digit
+    expect(digitBtn).toHaveAttribute('data-active')
+
+    await blurGrid(canvas, user)
+    expect(digitBtn).not.toHaveAttribute('data-active')
+  },
+}
