@@ -120,15 +120,16 @@ export function SudokuPage() {
 
   function handleDigitTap(digit: number) {
     if (gridHasFocus) {
-      if (sudoku.noteMode) {
-        sudoku.toggleNote(focusedIndex, digit)
-        // A value entry already ends up highlighted via the focused cell's own value (the
-        // SudokuSameValueHighlight fallback); a note entry doesn't set a value, so nothing
-        // would otherwise highlight it — arm it explicitly, replacing whatever was armed.
-        setHighlightedDigit(digit)
-      } else {
-        sudoku.setValue(focusedIndex, digit)
-      }
+      // Committing into the focused cell targets that one cell, same as a direct cell tap —
+      // it must not leave a selection session for the *next* empty-cell tap to extend into.
+      selectionSessionRef.current = false
+      if (sudoku.noteMode) sudoku.toggleNote(focusedIndex, digit)
+      else sudoku.setValue(focusedIndex, digit)
+      // Arm the digit explicitly rather than relying on SudokuSameValueHighlight's
+      // focused-cell-value fallback: that fallback only holds up while focus stays on this
+      // exact cell, but moving to a different cell next (or moving focus away entirely) would
+      // silently drop the highlight even though the digit is still the one in play.
+      setHighlightedDigit(digit)
     } else {
       setHighlightedDigit((current) => (current === digit ? null : digit))
     }
