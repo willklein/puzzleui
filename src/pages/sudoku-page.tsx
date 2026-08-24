@@ -176,6 +176,7 @@ export function SudokuPage() {
       <Sudoku.Root model={sudoku} renderGrid={false} className="sudoku sudoku-mobile">
         <div
           className="sudoku-mobile-grid"
+          data-has-focus={gridHasFocus ? '' : undefined}
           onFocus={() => setGridHasFocus(true)}
           onBlur={(event) => {
             const next = event.relatedTarget as HTMLElement | null
