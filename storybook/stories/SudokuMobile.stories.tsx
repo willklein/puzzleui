@@ -277,3 +277,34 @@ export const ActiveDigitAfterSolutionBlur: Story = {
     expect(digitBtn).not.toHaveAttribute('data-active')
   },
 }
+
+/**
+ * A digit's pad button hides once it's been placed all `layout.size` times without any of
+ * those placements conflicting with each other in a row/column/box — regardless of whether
+ * each placement is in its actual solution cell ("correct" here means rule-valid, not solved).
+ * Digit 2 has the fewest givens in this puzzle (2, at cells 49 and 60), so painting it into 7
+ * more empty cells — one in each still-needed row/column/box (2, 17, 21, 28, 43, 63, 77;
+ * verified conflict-free offline against the puzzle's fixed layout) — completes it without
+ * needing to solve the rest of the puzzle first.
+ */
+export const HidesFullyAndValidlyPlacedDigit: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const user = userEvent.setup()
+    const grid = cells(canvas)
+
+    await blurGrid(canvas, user)
+    const digitTwo = canvas.getByRole('button', { name: '2' })
+    await user.click(digitTwo) // arm digit 2
+
+    for (const index of [2, 17, 21, 28, 43, 63, 77]) {
+      await user.click(grid[index]) // paint mode: each tap places the armed digit directly
+    }
+
+    expect(grid[2]).toHaveTextContent('2')
+    expect(canvas.queryByRole('button', { name: '2' })).not.toBeInTheDocument()
+
+    // an unrelated, not-yet-fully-placed digit stays selectable
+    expect(canvas.getByRole('button', { name: '1' })).toBeInTheDocument()
+  },
+}
