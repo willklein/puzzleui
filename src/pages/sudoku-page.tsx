@@ -118,6 +118,24 @@ export function SudokuPage() {
   const canFilterDigits = gridHasFocus && !sudoku.given[focusedIndex] && sudoku.values[focusedIndex] == null
   const eligibleDigits = canFilterDigits ? new Set(sudoku.remainingCandidates[focusedIndex]) : null
 
+  // A digit is "solved" once it's been placed all `layout.size` times with none of those
+  // placements conflicting with each other — i.e. it legally occupies every row, column, and
+  // box exactly once. That's a rule-validity check, not a solution check: it doesn't require
+  // any placement to be in its *correct* cell, only that the digit itself is fully and validly
+  // placed, so there's nothing left to enter it into.
+  const solvedDigits = new Set(
+    DIGITS.filter((digit) => {
+      let placements = 0
+      let hasConflict = false
+      for (let cell = 0; cell < sudoku.values.length; cell++) {
+        if (sudoku.values[cell] !== digit) continue
+        placements++
+        if (sudoku.conflicts[cell]) hasConflict = true
+      }
+      return placements === sudoku.layout.size && !hasConflict
+    }),
+  )
+
   function handleDigitTap(digit: number) {
     // Tapping the already-armed digit again always just deselects it — regardless of whether a
     // cell happens to be focused — rather than re-committing into that cell a second time. This
@@ -222,24 +240,27 @@ export function SudokuPage() {
           </div>
 
           <div className="sudoku-mobile-digitpad">
-            {DIGITS.map((digit) => (
-              <button
-                key={digit}
-                type="button"
-                className="sudoku-mobile-digit"
-                data-hidden={eligibleDigits != null && !eligibleDigits.has(digit) ? '' : undefined}
-                data-active={highlightedDigit === digit ? '' : undefined}
-                aria-hidden={eligibleDigits != null && !eligibleDigits.has(digit) ? true : undefined}
-                tabIndex={eligibleDigits != null && !eligibleDigits.has(digit) ? -1 : 0}
-                // Keeps whatever cell is focused focused — a tap here must not steal DOM focus
-                // away from the grid, since that's what tells this page whether to enter the
-                // digit into the focused cell or toggle the tap-to-highlight behavior instead.
-                onPointerDown={(event) => event.preventDefault()}
-                onClick={() => handleDigitTap(digit)}
-              >
-                {digit}
-              </button>
-            ))}
+            {DIGITS.map((digit) => {
+              const hidden = solvedDigits.has(digit) || (eligibleDigits != null && !eligibleDigits.has(digit))
+              return (
+                <button
+                  key={digit}
+                  type="button"
+                  className="sudoku-mobile-digit"
+                  data-hidden={hidden ? '' : undefined}
+                  data-active={highlightedDigit === digit ? '' : undefined}
+                  aria-hidden={hidden ? true : undefined}
+                  tabIndex={hidden ? -1 : 0}
+                  // Keeps whatever cell is focused focused — a tap here must not steal DOM focus
+                  // away from the grid, since that's what tells this page whether to enter the
+                  // digit into the focused cell or toggle the tap-to-highlight behavior instead.
+                  onPointerDown={(event) => event.preventDefault()}
+                  onClick={() => handleDigitTap(digit)}
+                >
+                  {digit}
+                </button>
+              )
+            })}
           </div>
         </div>
       </Sudoku.Root>
