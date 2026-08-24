@@ -25,6 +25,15 @@ interface SudokuMobileCellProps {
   index: number
   highlightedDigit: number | null
   onHighlightDigit: (digit: number | null) => void
+  /**
+   * Whether the *previous* cell-targeting action left an in-progress multi-selection to extend.
+   * Deliberately a ref, not the `gridHasFocus` state: a real tap on a not-yet-focused cell
+   * button fires the browser's native `focus` (and therefore this page's `onFocus`) *before*
+   * the `click` that runs `handleClick` — so by the time any state set from `onFocus` is read
+   * here, it already reflects this very tap's own focus, not whatever was true beforehand.
+   * A ref written synchronously inside click handlers themselves has no such race.
+   */
+  selectionSessionRef: React.MutableRefObject<boolean>
 }
 
 /**
@@ -34,11 +43,18 @@ interface SudokuMobileCellProps {
  * directly from the public Api (`getCellProps`, `Sudoku.Note`) with a custom `onClick`:
  *   - a digit is "armed" (tapped on the pad while no cell was focused): place it directly, paint-style.
  *   - the cell already has a value: focus it and arm its digit, so its value is what's highlighted.
- *   - otherwise (an empty cell, no digit armed): fold it into a touch multi-selection.
+ *   - otherwise (an empty cell, no digit armed): extend the touch multi-selection being built by
+ *     consecutive taps if one is already in progress (`selectionSessionRef`), or start a fresh one.
  * The roving-tabindex focus-sync effect is copied from `sudoku-cell.tsx` — it's the one thing that
  * still has to run per cell for keyboard nav to keep working alongside the tap gesture.
  */
-function SudokuMobileCell({ sudoku, index, highlightedDigit, onHighlightDigit }: SudokuMobileCellProps) {
+function SudokuMobileCell({
+  sudoku,
+  index,
+  highlightedDigit,
+  onHighlightDigit,
+  selectionSessionRef,
+}: SudokuMobileCellProps) {
   const buttonRef = useRef<HTMLButtonElement>(null)
   const value = sudoku.values[index]
   const noteColumns = Math.ceil(Math.sqrt(sudoku.layout.size))
@@ -52,17 +68,28 @@ function SudokuMobileCell({ sudoku, index, highlightedDigit, onHighlightDigit }:
 
   function handleClick() {
     if (highlightedDigit != null) {
+      selectionSessionRef.current = false
       sudoku.selectCell(index)
       if (sudoku.noteMode) sudoku.toggleNote(index, highlightedDigit)
       else sudoku.setValue(index, highlightedDigit)
       return
     }
     if (value != null) {
+      selectionSessionRef.current = false
       sudoku.selectCell(index)
       onHighlightDigit(value)
       return
     }
-    sudoku.toggleSelected(index)
+    // Extend the selection being built by consecutive taps only if one is already in progress;
+    // otherwise start a fresh, single-cell one and mark a session as now in progress for the
+    // *next* tap to extend. This has to be a ref, not the `gridHasFocus` state — see the prop's
+    // doc comment for why that races with a real tap on a not-yet-focused cell.
+    if (selectionSessionRef.current) {
+      sudoku.toggleSelected(index)
+    } else {
+      sudoku.selectCell(index)
+      selectionSessionRef.current = true
+    }
   }
 
   return (
@@ -85,6 +112,7 @@ export function SudokuPage() {
   const sudoku = useSudoku({ layout: SUDOKU_9X9, givens: NINE_BY_NINE })
   const [gridHasFocus, setGridHasFocus] = useState(false)
   const [highlightedDigit, setHighlightedDigit] = useState<number | null>(null)
+  const selectionSessionRef = useRef(false)
 
   const focusedIndex = sudoku.focusedIndex
   const canFilterDigits = gridHasFocus && !sudoku.given[focusedIndex] && sudoku.values[focusedIndex] == null
@@ -123,6 +151,7 @@ export function SudokuPage() {
               setGridHasFocus(false)
               sudoku.selectCell(sudoku.focusedIndex)
               setHighlightedDigit(null)
+              selectionSessionRef.current = false
             }
           }}
         >
@@ -143,6 +172,7 @@ export function SudokuPage() {
                 index={index}
                 highlightedDigit={highlightedDigit}
                 onHighlightDigit={setHighlightedDigit}
+                selectionSessionRef={selectionSessionRef}
               />
             ))}
           </div>
